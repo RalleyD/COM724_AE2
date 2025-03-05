@@ -48,11 +48,12 @@ def get_historical_data(coins: list, days=365):
 
     df.to_csv(CSV, sep=',', encoding='utf8')
 
-    # print(df.shape)
-    # print(df.info(verbose=True))
-    # print(df.head(4))
+    print("#----------------#")
+    print(df.info(verbose=True))
+    print("#----------------#")
     print("successfully obtained %d days of data for coin %s" %
           (len(df), str(df.columns)))
+    print("#----------------#")
 
     return data.loc[:, ['Close']]
 
@@ -85,10 +86,13 @@ def plot_price_trends(data: pd.DataFrame, top_n=5):
     # Plot
     plt.figure(figsize=(15, 8))
     for col in top_coin_cols:
-        coin_name = col.split('_')[0].capitalize()
+        coin_name = col.split('-')[0].capitalize()
         plt.plot(data.index, data[col], label=coin_name)
 
-    plt.title(f'Price Trends for Top {top_n} Cryptocurrencies')
+        plt.plot(data.index, data[col].rolling(
+            window=7).mean(), linestyle='--', label=f"{coin_name} 7-day moving avg")
+
+    plt.title(f'Close price for Top {top_n} Cryptocurrencies')
     plt.xlabel('Date')
     plt.ylabel('Price (USD)')
     plt.legend()
