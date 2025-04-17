@@ -16,7 +16,7 @@ os.makedirs(data_dir, exist_ok=True)
 CSV = f"{data_dir}/top_30_cryptos_past_year.csv"
 
 
-def get_historical_data(coins: list, days=365):
+def get_historical_data(coins: list, end_date: datetime = None, days=365, output_file=None):
     """
     Get the historical data for a specific coin
 
@@ -26,10 +26,6 @@ def get_historical_data(coins: list, days=365):
     Returns:
         pandas.DataFrame: of the historical price data.
     """
-    # Define the date range for the past year
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=int(days-1))
-
     cryptos: list = [coin[1] for coin in coins]
 
     cryptos = list(map(lambda x: x.upper() + '-USD', cryptos))
@@ -38,7 +34,13 @@ def get_historical_data(coins: list, days=365):
 
     # Initialize an empty DataFrame to hold all the data
     data: pd.DataFrame = None
+    if not end_date:
+        # Define the date range for the past year
+        end_date = datetime.now()
+    start_date = end_date - timedelta(days=int(days-1))
+    print(f"getting data for time range. {start_date} -> {end_date}")
     data = yf.download(cryptos, start=start_date, end=end_date)
+
     if data.empty:
         return None
 
@@ -46,7 +48,11 @@ def get_historical_data(coins: list, days=365):
     df.dropna(inplace=True, axis=1)
     df = df.droplevel('Price', axis=1)
 
-    df.to_csv(CSV, sep=',', encoding='utf8')
+    if output_file:
+        output_file = f"{data_dir}/{output_file}"
+    else:
+        output_file = CSV
+    df.to_csv(output_file, sep=',', encoding='utf8')
 
     print("#----------------#")
     print(df.info(verbose=True))
@@ -58,9 +64,9 @@ def get_historical_data(coins: list, days=365):
     return data.loc[:, ['Close']]
 
 
-def fetch_historical_coin_data(coin_limit=30, days_limit=365):
+def fetch_historical_coin_data(coin_limit=30, days_limit=365, end_date: datetime = None, output_file=None):
     coins = get_top_30_coins(coin_limit)
-    get_historical_data(coins, days_limit)
+    get_historical_data(coins, end_date, days_limit, output_file)
 
 
 def plot_price_trends(data: pd.DataFrame, top_n=5):
