@@ -1,0 +1,43 @@
+@startuml
+
+package "Pre-processing" {
+    database "Dataset" as dataset
+    entity "Normalisation" as normalisation
+    entity "Data splitting" as data_splitting
+    entity "Reshape" as reshape
+    dataset -left-> normalisation
+    normalisation -left-> reshape
+    reshape -left-> data_splitting
+}
+
+component "Training" {
+    folder "Training Data" as training_data
+    component "LSTM" as lstm_comp {
+        entity "input layer" as ip
+        entity "Hidden layer(s)" as hidden
+        entity "Dropout layer(s)" as drop
+        entity "Output layer" as lstm
+    }
+
+    training_data -down-> ip
+    ip -right-> hidden
+    hidden -right-> drop
+    drop -right-> lstm
+}
+
+component "Testing" as test {
+    folder "Testing Data" as testing_data
+    entity "Regression" as regression
+    entity "Result" as result
+
+    testing_data -right-> regression
+    regression -right-> result
+}
+
+lstm --> regression
+
+entity "cross validation" as cross_validation
+data_splitting --> cross_validation
+cross_validation -right-> training_data
+cross_validation --> testing_data
+@enduml

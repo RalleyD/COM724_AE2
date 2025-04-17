@@ -1,0 +1,20 @@
+@startuml
+start
+:Data extraction;
+:Feature engineering;
+:Normalization;
+:Train-test split;
+:Reshape;
+while (cross validation)
+    :Input layer;
+    :Dropout layers;
+    :Hidden layers;
+    :Output layer;
+    :Train model;
+    -[#blue]->
+endwhile;
+-[#green]->
+:Predict;
+:Evaluate;
+stop
+@enduml
