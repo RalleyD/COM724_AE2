@@ -3,14 +3,14 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import os
 
 # --- Set page config ---
 st.set_page_config(page_title="Crypto Dashboard", layout="wide")
 
-# --- Fake data for demo purposes ---
-
 
 def generate_mock_market_data():
+    # --- Fake data for demo purposes ---
     coins = [f"Coin {i}" for i in range(1, 31)]
     data = {
         "Coin": coins,
@@ -22,11 +22,28 @@ def generate_mock_market_data():
     return pd.DataFrame(data)
 
 
+def global_market_change(df: pd.DataFrame, time_period_days=1) -> pd.DataFrame:
+    period = pd.date_range(
+        start=df.index[-1] - pd.Timedelta(days=time_period_days), periods=1+time_period_days)
+
+    latest_closes_pct_change = df.loc[period, :].pct_change().dropna()
+
+    if time_period_days > 1:
+        column_means = latest_closes_pct_change.mean(axis=0)
+        return column_means.mean()
+    else:
+        return latest_closes_pct_change.mean(axis=1).iloc[0]
+
+
 def plot_sparkline(prices):
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=prices, mode='lines', line=dict(color='gray')))
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=40)
     return fig
+    """ alternative using a pd.Series
+    fig = px.line(coin, title=f"Sparkline Chart for {coin.name}", labels={"value": "Price", "index": "Date"})
+    fig.update_traces(line=dict(width=1))
+    """
 
 
 # --- UI Start ---
@@ -39,28 +56,36 @@ tab1, tab2 = st.tabs(["🌐 Market Overview", "📈 Forecast & Insights"])
 with tab1:
     st.subheader("Top 30 Coins - Market Performance")
 
-    market_df = generate_mock_market_data()
+    print(os.getcwd())
+
+    # market_df = generate_mock_market_data()
+    # TODO careful on path resolution!!
+    market_df = pd.read_csv("backend/data/top_30_cryptos_past_year.csv",
+                            parse_dates=True, index_col=0)
 
     # Show filters or summary stats (optional)
     col1, col2 = st.columns(2)
     with col1:
         st.metric(label="Global Market Change (24h)",
-                  value=f"{market_df['24h Change (%)'].mean():.2f} %")
+                  value=f"{global_market_change(market_df):.2f} %")
 
     # Display overview grid
-    for i in range(0, len(market_df), 3):
+    for i in range(0, len(market_df.columns), 3):
         cols = st.columns(3)
         for j in range(3):
-            if i + j >= len(market_df):
+            if i + j >= len(market_df.columns):
                 break
-            coin = market_df.iloc[i + j]
+            # gives a series where we can extract the name attribute
+            print(i, j)
+            coin = market_df.iloc[:, i + j]
             with cols[j]:
-                st.markdown(f"**{coin['Coin']}**")
-                col_val = coin["24h Change (%)"]
+                st.markdown(f"**{coin.name}**")
+                col_val = global_market_change(market_df.loc[:, [coin.name]])
                 st.metric(
                     "24h", f"{col_val:+.2f}%", delta_color="inverse" if col_val < 0 else "normal")
+                # TODO limit time range!!
                 st.plotly_chart(plot_sparkline(
-                    coin["Sparkline"]), use_container_width=True)
+                    coin), use_container_width=True)
 
 # ============ TAB 2 ============ #
 with tab2:
