@@ -310,7 +310,7 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
     target_col = 'close'
     feature_cols = [col for col in df_features.columns if col != target_col]
 
-    # Scale features
+    # Scale features TODO why if we're working on one coin at at time?
     scaler = StandardScaler()
     df_scaled = pd.DataFrame(
         scaler.fit_transform(df_features),
@@ -334,12 +334,7 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
     X = np.array(X)
     y = np.array(y)
 
-    # Split data (use more recent data for testing)
-    train_size = int(len(X) * 0.8)
-    X_train, X_test = X[:train_size], X[train_size:]
-    y_train, y_test = y[:train_size], y[train_size:]
-
-    # Train model
+    # Train model TODO add baseline params from notebook
     base_model = XGBRegressor(
         n_estimators=100,
         learning_rate=0.1,
@@ -349,8 +344,9 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
         random_state=42
     )
 
+    # TODO add cross validation and return best iteration - put this into a separate function
     model = MultiOutputRegressor(base_model)
-    model.fit(X_train, y_train)
+    model.fit(X, y)
 
     # Get latest input window for forecasting
     latest_input = df_scaled.iloc[-input_window:
