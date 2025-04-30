@@ -336,11 +336,11 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
 
     # Train model TODO add baseline params from notebook
     base_model = XGBRegressor(
-        n_estimators=100,
-        learning_rate=0.1,
+        n_estimators=280,
+        learning_rate=0.05,
         max_depth=5,
         subsample=0.8,
-        colsample_bytree=0.8,
+        colsample_bytree=0.9,
         random_state=42
     )
 
