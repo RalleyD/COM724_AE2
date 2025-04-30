@@ -15,9 +15,14 @@ import warnings
 warnings.filterwarnings('ignore')
 
 #### TODO ####
-# what-if analysis doesn't look correct based on line chart
 # get_market_state should use percentage change from pandas
 # xgboost forecast continuity, use revised method from notebook
+# Check best practices for 7 and 30 day moving average plots
+# as the time interval is increased, the forecast x-scale does not.
+# extend to all coins.
+# confidence interval (look this up)
+# add target profit parameter to buy recommendation - should not retrigger forecast
+# train model once on 90 day forecast and refresh button - cache
 
 # Set page configuration
 st.set_page_config(
@@ -484,7 +489,7 @@ def calculate_profit_scenarios(df, amount=1, days_ago=30):
 
     # If we have enough historical data
     if len(df) > days_ago:
-        past_price = df['close'].iloc[-days_ago-1]
+        past_price = df['close'].iloc[-days_ago]
         profit = (current_price - past_price) * amount
         return profit
     else:
