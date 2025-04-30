@@ -310,25 +310,17 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
     target_col = 'close'
     feature_cols = [col for col in df_features.columns if col != target_col]
 
-    # Scale features TODO why if we're working on one coin at at time?
-    scaler = StandardScaler()
-    df_scaled = pd.DataFrame(
-        scaler.fit_transform(df_features),
-        columns=df_features.columns,
-        index=df_features.index
-    )
-
     # Prepare X (input) and y (target) data for training
     X, y = [], []
 
     # For each possible start point
-    for i in range(len(df_scaled) - input_window - forecast_horizon + 1):
+    for i in range(len(df_features) - input_window - forecast_horizon + 1):
         # Input window
-        X.append(df_scaled.iloc[i:i+input_window]
+        X.append(df_features.iloc[i:i+input_window]
                  [feature_cols].values.flatten())
 
         # Target: next forecast_horizon closing prices
-        y.append(df_scaled.iloc[i+input_window:i +
+        y.append(df_features.iloc[i+input_window:i +
                  input_window+forecast_horizon][target_col].values)
 
     X = np.array(X)
@@ -349,18 +341,11 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
     model.fit(X, y)
 
     # Get latest input window for forecasting
-    latest_input = df_scaled.iloc[-input_window:
-                                  ][feature_cols].values.flatten().reshape(1, -1)
+    latest_input = df_features.iloc[-input_window:
+                                    ][feature_cols].values.flatten().reshape(1, -1)
 
     # Make forecast
-    forecast_scaled = model.predict(latest_input)[0]
-
-    # Inverse transform to get actual price values
-    # Note: This is a simplification. In practice, you'd need to create a DataFrame with all columns
-    # Here we're just approximating by applying the inverse transform to the mean and std of closing prices
-    mean_close = df_features['close'].mean()
-    std_close = df_features['close'].std()
-    forecast = forecast_scaled * std_close + mean_close
+    forecast = model.predict(latest_input)[0]
 
     # Create forecast dates
     last_date = df.index[-1]
