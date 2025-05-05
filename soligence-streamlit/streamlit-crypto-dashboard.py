@@ -21,7 +21,6 @@ warnings.filterwarnings('ignore')
 # extend to all coins.
 # confidence interval (look this up)
 # add target profit parameter to buy recommendation - should not retrigger forecast
-# train model once on 90 day forecast and refresh button - cache
 
 # Set page configuration
 st.set_page_config(
@@ -284,7 +283,7 @@ def add_features(df):
     data = df.copy()
 
     # Add lagged features
-    for lag in [1, 7, 14, 30]:
+    for lag in [1, 3, 5]:
         data[f'close_lag_{lag}'] = data['close'].shift(lag)
 
     # Add rolling stats
@@ -309,7 +308,8 @@ def add_features(df):
     return data
 
 
-def train_forecast_model(df, forecast_horizon=30, input_window=60):
+@st.cache_data
+def train_forecast_model(df, forecast_horizon=90, input_window=180):
     """Train an XGBoost model for multi-step forecasting"""
     # Prepare features
     df_features = add_features(df)
@@ -344,7 +344,6 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
         random_state=42
     )
 
-    # TODO add cross validation and return best iteration - put this into a separate function
     model = MultiOutputRegressor(base_model)
     model.fit(X, y)
 
@@ -573,9 +572,7 @@ def main():
 
     # Generate price forecast
     with st.spinner('Generating price forecast...'):
-        forecast = train_forecast_model(coin_data,
-                                        forecast_horizon=time_interval,
-                                        input_window=2*time_interval)
+        forecast = train_forecast_model(coin_data)
 
     # Calculate metrics
     current_price = coin_data['close'].iloc[-1]
@@ -711,19 +708,22 @@ def main():
         ))
 
         # Add forecast line
+        print(forecast.loc[forecast.index[:time_interval], 'date'].tail())
         fig.add_trace(go.Scatter(
-            x=forecast['date'],
-            y=forecast['predicted'],
+            x=forecast.loc[forecast.index[:time_interval], 'date'],
+            y=forecast.loc[forecast.index[:time_interval], 'predicted'],
             mode='lines',
             name='Forecast',
             line=dict(color='#7C3AED', width=2, dash='dash')
         ))
 
         # Add confidence interval
+        forecast_interval = forecast[:time_interval]
         fig.add_trace(go.Scatter(
-            x=forecast['date'].tolist() + forecast['date'].tolist()[::-1],
-            y=forecast['upper_bound'].tolist(
-            ) + forecast['lower_bound'].tolist()[::-1],
+            x=forecast_interval['date'].tolist(
+            ) + forecast_interval['date'].tolist()[::-1],
+            y=forecast_interval['upper_bound'].tolist(
+            ) + forecast_interval['lower_bound'].tolist()[::-1],
             fill='toself',
             fillcolor='rgba(124, 58, 237, 0.2)',
             line=dict(color='rgba(255, 255, 255, 0)'),
@@ -731,7 +731,7 @@ def main():
         ))
 
         fig.update_layout(
-            title=f'{selected_coin} 30-Day Price Forecast',
+            title=f'{selected_coin} {time_interval}-Day Price Forecast',
             xaxis_title='Date',
             yaxis_title='Price (USD)',
             legend=dict(orientation='h', yanchor='bottom',
