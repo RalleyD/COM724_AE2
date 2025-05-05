@@ -18,7 +18,6 @@ warnings.filterwarnings('ignore')
 # get_market_state should use percentage change from pandas
 # xgboost forecast continuity, use revised method from notebook
 # Check best practices for 7 and 30 day moving average plots
-# as the time interval is increased, the forecast x-scale does not.
 # extend to all coins.
 # confidence interval (look this up)
 # add target profit parameter to buy recommendation - should not retrigger forecast
@@ -128,7 +127,9 @@ def get_crypto_data(symbol="BTC", interval="1d", limit=1000):
 
 @st.cache_data
 def generate_mock_data(symbol, days=365):
-    """Generate mock data if API is not available"""
+    """
+    TODO remove
+    Generate mock data if API is not available"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
     date_range = pd.date_range(start=start_date, end=end_date, freq='D')
@@ -207,7 +208,9 @@ def get_crypto_news(coin="bitcoin"):
 
 @st.cache_data
 def generate_mock_news(coin="bitcoin"):
-    """Generate mock news if API is not available"""
+    """
+    TODO remove
+    Generate mock news if API is not available"""
     news_titles = [
         f"{coin.upper()} Surges Past Key Resistance Levels",
         f"Major Bank Announces {coin.capitalize()} Integration",
@@ -331,11 +334,11 @@ def train_forecast_model(df, forecast_horizon=30, input_window=60):
     X = np.array(X)
     y = np.array(y)
 
-    # Train model TODO add baseline params from notebook
+    # Train model
     base_model = XGBRegressor(
-        n_estimators=280,
+        n_estimators=180,
         learning_rate=0.05,
-        max_depth=5,
+        max_depth=4,
         subsample=0.8,
         colsample_bytree=0.9,
         random_state=42
@@ -530,10 +533,12 @@ def main():
         )
 
         # Time interval selection
-        time_interval = st.select_slider(
-            'Time Interval (Days)',
-            options=[7, 30, 60, 90],
-            value=30
+        time_interval = int(
+            st.select_slider(
+                'Time Interval (Days)',
+                options=[7, 14, 30, 60, 90],
+                value=30,
+            )
         )
 
         # Target profit for recommendations
@@ -568,7 +573,9 @@ def main():
 
     # Generate price forecast
     with st.spinner('Generating price forecast...'):
-        forecast = train_forecast_model(coin_data)
+        forecast = train_forecast_model(coin_data,
+                                        forecast_horizon=time_interval,
+                                        input_window=2*time_interval)
 
     # Calculate metrics
     current_price = coin_data['close'].iloc[-1]
