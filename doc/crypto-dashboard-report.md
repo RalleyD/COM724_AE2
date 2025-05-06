@@ -280,7 +280,7 @@ To facilitate and simplify multi-step forecasting, the optimized XGBoost model w
 | Bitcoin (BTC)  | 15885.20 | 453152984.84 | 21287.39 | -0.71 |  
 *Table - Multi-output XGBoost Regressor Scores*
 
-These scores are based on the inclusion of the recommended derived featues (7-day moving average, 30-day moving average). This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance (see Table 2)
+These scores are based on the inclusion of the recommended derived featues (short-term time lags, 7-day moving average, 30-day moving average). This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance (see Table 2).
 
 ### Model Evaluation Results
 
@@ -296,11 +296,9 @@ The model evaluation revealed significant performance variations across differen
 
 These results highlight several important observations:
 
-1. The absolute error metrics (MAE, MSE) vary significantly based on the price scale of each cryptocurrency. 
+1. Litecoin and Ethereum showed the best predictive performance with an R² of 0.93, indicating that the model captured approximately 93% of the price variance.
 
-2. Litecoin showed the best predictive performance with an R² of 0.93, indicating that the model captured approximately 93% of the price variance.
-
-3. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than a simple mean predictor for these assets.
+2. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than an ensemble learning method for these assets.
 
 The short-term partial autocorrelation and performance scores highlight the importance of training the model on as much recent data as possible. Table 2, presents scores determined over a holdout period (20 %) equivalent to one year of data.
 
