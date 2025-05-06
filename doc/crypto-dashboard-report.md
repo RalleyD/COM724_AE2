@@ -133,6 +133,17 @@ These non-normal distributions and lack of consistent patterns between coins tha
 
 I.e. two to three time lags of statistical significance.
 
+### Feature Importance
+
+Utilising random forest regression to determine the relative importance of engineered features derived from the close prices.
+
+![](images/feature-importance-btc.png)
+
+Accross the representative cryptocurrencies, the following derived features returned the highest relative importance:
+
+- lags 1, 3 and 5.
+- 7-day and 30-day moving averages.
+
 ### Model Selection and Optimization
 
 The model selection process employed a structured evaluation of multiple forecasting approaches:
@@ -148,7 +159,85 @@ The model selection process employed a structured evaluation of multiple forecas
 
 The evaluation metrics included Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), Mean Absolute Percentage Error (MAPE) and R-squared score; to assess model performance.
 
-PyCaret was utilised for efficient model optimisation. The optimisation process, as illustrated in Table 1, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
+#### Model Assessment
+
+#### Arima
+
+ARIMA models have been widely used in financial forecasting (Box et al., 2015) to capture linear temporal relationships. This presents some limitations:
+
+1. Most of the representative coins exhibit no stationarity, despite attempts to transform or difference the data.
+2. Time series decomposition revealed non-linear patters over lagged periods also noted by Bariviera et al. (2017).
+3. Capturing high volatility i.e high variance resulted in low R-squared scores.
+
+| Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
+|:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
+| ARIMA   | 1.2824 |  1.0809 | 3192.87 | 3989.93 | 0.0391 |  0.0379 | -1.4911 |  
+*Table - Arima Performance Evaluation - BTC Past 5 Year Close Prices*
+
+![](images/arima-eval.png)  
+*Figure - Arima Prediction Line Plot*
+
+Due to its popularity, it was selected for evaluation as a means to compare against other methods.
+
+#### Exponential Smoothing
+
+Single exponentia smoothing was selected for it's ability to perform regression on univariate data with decreasing weights for older observations (TODO cite). Despite this model's ability to adapt to changing trends, it exhibited similar limitations:
+
+1. The long term autocorrelation in the close prices may have caused poor performance (Kristjanpoller and Minutolo, 2018).
+2. Lacking complexity required to model short term volatility.
+3. Acheiving slightly bettere results that ARIMA but underperforming.
+
+| Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
+|:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
+| Exponential Smoothing | 0.7698 |0.6517	| 5246.4672 | 6196.5309	| 0.0582	| 0.0556 |-1.3908 |  
+*Table - Exponential Smoothing Evaluation*
+
+4. Differencing the data showed noticable improvement.
+
+| Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
+|------------------------|--------|--------|-----------|-----------|--------|--------|-------|
+| Exponential Smoothing | 1.2419 | 1.1864 | 1635.2009 | 2288.3155	 | 1.1406 | 1.4772 | -0.0723 |  
+*Table - Exponential Smoothing Evaluation - Differenced Data*
+
+![](images/exp-smooth-differenced-tuned.png)  
+*Figure - Tuned Exponential Smoothing Plot - Trained on Differenced Data*
+
+#### Random Forest
+
+Leverages ensebmle decision trees to model complex non-linear relationships. It is robust to outliers which handles extreme price movements (Breiman, 2001). However, Random Forest doesn't consider sequential dependencies, leading to a low R-squared score.
+
+| Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
+|------------------------|--------|--------|-----------|-----------|--------|--------|-------|
+| RandomForestRegressor | 1.1709 | 1.1426 | 1541.7756 | 2203.8583 | 1.3086 | 1.4074 | 0.0054 |  
+*Table - Random Forest Performance Evaluation*
+
+#### Prophet By Meta
+
+Incorporates decomposable time-series models with trend and seasonality components. Similarly to ARIMA, this presented some limitations:
+
+1. Lack of trend and seasonality.
+
+![](images/prophet-eval.png)  
+*Figure - Prophet Prediction Line Plot.*
+
+2. Due to the inherently noisy data with spurious historical peaks, Prophet appears too sensitive with changepoint detection.
+
+| Model   |    MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |       R2 |
+|:--------|--------:|--------:|--------:|--------:|-------:|--------:|---------:|
+| Prophet | 7.1681 | 5.3037 | 17327.8076 | 19026.5950 | 0.1915 | 0.1742 | -25.0629 |  
+*Table - Prophet Evaluation*
+
+Ultimately, leading to poor performance.
+
+#### Extreme Gradient Boosting
+
+Implements gradient boosting with regularisation and tree-pruning (TOOD cite). This demonstrated the following advantages:
+
+1. Iteratively building trees from the residuals of the prior, helps to capture complex temporal patterns (Chen and Guestrin, 2016).
+2. Prevents overfitting to historical patterns.
+3. Designed to model non-linear relationships, it can capture non-linear patterns observed in the cryptocurrency markets.
+
+PyCaret was utilised for efficient model optimisation. The optimisation process, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
 
 ```Python
 from pycaret.regression import *
@@ -168,43 +257,48 @@ xgb_model = xgb_exp.create_model('xgboost')
 ```
 *Figure 1 - XGBoost Experiment Code*
 
-| Fold | MAE       | MSE          | RMSE     | R2     | RMSLE  | MAPE   |
-|------|-----------|--------------|----------|--------|--------|--------|
-| 0    | 2938.3538 | 14330692.0000 | 3785.5901 | 0.8402 | 0.0746 | 0.0587 |
-| 1    | 1338.6779 | 2871917.7500  | 1694.6733 | 0.9695 | 0.0639 | 0.0507 |
-| 2    | 760.8511  | 1206861.2500  | 1098.5724 | 0.9399 | 0.0435 | 0.0298 |
-| **Mean** | **1679.2943** | **6136490.3333** | **2192.9453** | **0.9165** | **0.0607** | **0.0464** |
-| **Std**  | **921.0118**  | **5833912.8666** | **1152.1638** | **0.0553** | **0.0129** | **0.0122** |
-*Table 1 XGBoost Cross Validation Results - Initial Experiment with 5 year BTC Close Price Data*
+| Model                     | MAE       | MSE          | RMSE      | R²     | RMSLE  | MAPE   |
+|---------------------------|-----------|--------------|-----------|--------|--------|--------|
+| Extreme Gradient Boosting | 9053.9287 | 243341152.00 | 15599.3955 | 0.4389 | 0.1972 | 0.1044 |
+*Table 1 XGBoost Results - Initial Experiment with 5 year BTC Close Price Data*
 
-XGBoost emerged as the best-performing model due to its ability to capture non-linear relationships and handle the high volatility characteristic of cryptocurrency data. The model was configured with the following key parameters:
+Utilising derived features for training the candidate model yielded 
+
+XGBoost emerged as the best-performing model due to its ability to capture non-linear relationships and handle the high volatility characteristic of cryptocurrency data. The model was configured with the following hyperparmeters:
 
 - Subsample: 0.8 (to reduce overfitting)
 - Max depth: 4 (balancing model complexity with generalization)
 - Learning rate: 0.05 (enabling regularisation between training iterations)
-- Number of estimators: 180 (providing sufficient model complexity)
+- Number of estimators: 200 (providing sufficient model complexity)
 
-To facilitate multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This approach, validated through extensive backtesting, demonstrated superior performance compared to recursive single-step forecasting methods.
+Lagged features were extracted from the close prices which also yielded strong performance scores. This introduced a challenge that necessitated these exogenous variables in each single forecast over the forecast window. With respect the objective of achieving the highest accuracy, modelling the exogenous variables on highly voltatile data was impractical and introduced additional computational overhead.
 
-The MultiOutputRegressor simplified multi-step forecasting with exogenous variables, providing further performance improvments over univariate regression.
+To facilitate and simplify multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This method was validated through extensive backtesting and yielded poorer performance scores than single-step forecasting:
+
+| Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
+|----------------|------------|----------------|-------|-----|
+| Bitcoin (BTC)  | 15885.20 | 453152984.84 | 21287.39 | -0.71 |  
+*Table - Multi-output XGBoost Regressor Scores*
+
+These scores are based on the inclusion of the recommended derived featues (7-day moving average, 30-day moving average). This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance (see Table 2)
 
 ### Model Evaluation Results
 
 The model evaluation revealed significant performance variations across different cryptocurrencies:
 
-| Cryptocurrency | MAE        | MSE            | R²    |
-|----------------|------------|----------------|-------|
-| Bitcoin (BTC)  | 24,084.70  | 817,797,760.33 | -2.17 |
-| Ethereum (ETH) | 361.15     | 214,700.79     | 0.36  |
-| Litecoin (LTC) | 10.41      | 235.69         | 0.49  |
-| Binance Coin (BNB) | 141.15 | 26,788.53      | -6.54 |
+| Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
+|----------------|------------|----------------|---------|-------|   
+| Bitcoin (BTC)  | 14622.54 | 421942655.86 | 20541.24 | -0.59 |  
+| Ethereum (ETH) | 108.63     | 19445.99    | 139.45 | 0.93 |
+| Litecoin (LTC) | 3.72      | 32.88        | 5.73 | 0.93  |
+| Binance Coin (BNB) | 63.59 | 6536.66    | 80.85 | -0.84 |
 *Table 2 - XGBoost Evaluation Across Multiple Cyptocurrencies*
 
 These results highlight several important observations:
 
-1. The absolute error metrics (MAE, MSE) vary significantly based on the price scale of each cryptocurrency.
+1. The absolute error metrics (MAE, MSE) vary significantly based on the price scale of each cryptocurrency. 
 
-2. Litecoin showed the best predictive performance with an R² of 0.49, indicating that the model captured approximately 49% of the price variance.
+2. Litecoin showed the best predictive performance with an R² of 0.93, indicating that the model captured approximately 93% of the price variance.
 
 3. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than a simple mean predictor for these assets.
 
@@ -212,11 +306,9 @@ The short-term partial autocorrelation and performance scores highlight the impo
 
 Further experiments with feature combinations and model configurations revealed that:
 
-1. Using two to three short-term time lag features consistently produced better results than using lag-1 or multiple longer term (i.e 7, 14 and 30 day) lags combined.
+1. Using moving average, price change and RSI features consistently produced better results than short term lags.
 
-2. Including technical indicators (RSI, moving averages) improved performance for Ethereum and Litecoin but had minimal impact on Bitcoin predictions.
-
-3. The performance discrepancies across currencies correlate with their non-stationary properties, supporting the hypothesis that stationary assets are inherently more predictable.
+2. The performance discrepancies across currencies correlate with their non-stationary properties, supporting the hypothesis that stationary assets are inherently more predictable.
 
 The final model configuration adopted a best-fit approach, using the best-performing feature set and hyperparameters accross coins selected from each cluster. This decision prioritised forecast accuracy, aligning with the project's objective of maximising predictive performance.
 
@@ -419,14 +511,15 @@ The table below shows the relative importance of features for the XGBoost model 
 
 | Feature | Importance |
 |:--------|----------:|
-| close_lag_3 | 0.2834 |
-| ma7 | 0.1956 |
-| rsi | 0.1532 |
-| std7 | 0.1247 |
-| price_change_7d | 0.0923 |
-| ma30 | 0.0712 |
-| price_change_1d | 0.0604 |
-| close | 0.0192 |
+| close_lag_1 | 0.89 |
+| close_lag_3 | 0.027 |
+| close_lag_5 | 0.012 |
+| ma7 | 0.05 |
+| ma30 | 0.03 |
+| rsi | 0.0002 |
+| std7 | 8.48e-05 |
+| price_change_7d | 0.0002 |
+| price_change_1d | 0.0023 |
 
 ### PyCaret Optimization Process
 
