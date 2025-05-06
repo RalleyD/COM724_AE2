@@ -409,7 +409,7 @@ Several technical challenges emerged during development:
    - Transformation techniques (differencing, log transformation) provided limited improvement in making the data more amenable to modeling.
 
 2. **Multi-Step forecasting**:
-   - The direct multi-step approach using MultiOutputRegressor introduced model complexity and training requirements.
+   - The direct multi-step approach using MultiOutputRegressor introduced model complexity and training requirements. Without this approach, it wouldn't have been possible to leverage multivariate forecasting of XGBoost, using true historical data.
    - Error propagation in long-horizon forecasts remains problematic, with accuracy degrading significantly beyond 14 days.
 
 3. **Feature engineering at scale**:
