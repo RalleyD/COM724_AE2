@@ -453,7 +453,7 @@ The cryptocurrency forecasting dashboard addresses the initial objectives by pro
 
 4. Multi-step forecasting approach using optimised XGBoost models represents a practical application of machine learning techniques in a challenging domain.
 
-However, the varying model performance across different cryptocurrencies highlights the inherent challenges in this domain. The significant differences in predictability between Bitcoin, Ethereum, and Litecoin suggest that cryptocurrency-specific modeling approaches are necessary for better results.
+However, the varying model performance across different cryptocurrencies highlights the inherent challenges in this domain. The significant inter-cluster differences suggest that cryptocurrency-specific modeling approaches, or ensemble-methods, are necessary for better results.
 
 Despite these challenges, the dashboard provides value as both an analytical tool and a research platform. For cryptocurrency newcomers, it offers accessible visualisations and simplified decision support. For researchers, it provides a foundation for exploring alternative modeling approaches and feature engineering techniques.
 
