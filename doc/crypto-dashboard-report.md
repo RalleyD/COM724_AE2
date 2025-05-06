@@ -4,7 +4,7 @@
 
 The cryptocurrency market has experienced significant growth and volatility since its inception, creating both opportunities and challenges for investors, traders, and researchers (Corbet et al., 2019). With over 10,000 cryptocurrencies in existence and a market capitalization exceeding $1 trillion, making informed investment decisions requires sophisticated analytical tools capable of processing vast amounts of data and identifying meaningful patterns (Levi and Lipton, 2022). Traditional financial analysis methods often fall short when applied to cryptocurrencies due to their unique characteristics, including extreme volatility, 24/7 trading, and sensitivity to technological, regulatory, and market sentiment factors (Fang et al., 2022).
 
-This report documents the development of a cryptocurrency forecasting dashboard designed to address these challenges. The dashboard leverages machine learning techniques, real-time data integration, and interactive visualizations to provide actionable insights for cryptocurrency market participants. Unlike conventional financial dashboards, our solution incorporates advanced time-series forecasting capabilities specifically optimized for cryptocurrency price prediction, correlation analysis, and investment decision support.
+This report documents the development of a cryptocurrency forecasting dashboard designed to address these challenges. The dashboard leverages machine learning techniques, real-time data integration, and interactive visualizations to provide actionable insights for cryptocurrency market participants. Expanding on conventional financial dashboards, this solution incorporates advanced time-series forecasting capabilities specifically optimised for cryptocurrency price prediction, correlation analysis, and investment decision support.
 
 ## Objectives and Problem Definition
 
@@ -12,31 +12,29 @@ This report documents the development of a cryptocurrency forecasting dashboard 
 
 The cryptocurrency market presents several unique challenges that this project aims to address:
 
-1. **Information Complexity**: The cryptocurrency ecosystem generates vast amounts of data across multiple platforms, making it difficult for individuals to process and interpret market dynamics effectively.
+1. The cryptocurrency ecosystem generates vast amounts of data across multiple platforms, making it difficult for individuals to process and interpret market dynamics effectively.
 
-2. **Decision Support Gap**: Both novice and experienced market participants lack comprehensive tools that combine historical analysis, real-time monitoring, and predictive capabilities in an accessible interface.
+2. Both novice and experienced market participants require comprehensive tools that combine historical analysis, real-time monitoring, and predictive capabilities in an accessible interface.
 
-3. **Forecasting Challenges**: Cryptocurrency price movements exhibit high volatility and non-linear patterns that traditional time-series methods struggle to capture accurately.
+3. Cryptocurrency price movements exhibit high volatility and non-linear patterns that are difficult to interpret.
 
-4. **Target Audience Needs**: Researchers and cryptocurrency newcomers require different levels of analytical depth, visualization options, and interpretability.
+4. Researchers and cryptocurrency newcomers require different levels of analytical depth, visualization options, and interpretability.
 
 ### Project Objectives
 
 To address these challenges, the project established the following key objectives:
 
-1. **Real-time Data Integration**: Implement connectivity with cryptocurrency exchange APIs to access current market data, while maintaining the ability to fall back on static datasets for testing and development purposes.
+1. Connectivity with cryptocurrency exchange APIs to access current market data, while maintaining the ability to fall back on static datasets for testing and development purposes.
 
-2. **Customizable Visualization Framework**: Develop interactive visualizations that adapt to user preferences, including time interval selection, profit targets, and specific cryptocurrencies of interest.
+2. Develop interactive visualisations that adapt to user preferences, including time interval selection, profit targets, and specific cryptocurrencies of interest.
 
-3. **Multi-horizon Forecasting**: Create predictive models capable of generating price forecasts across daily, weekly, monthly, and quarterly timeframes with quantifiable confidence levels.
+3. Create predictive models capable of generating price forecasts across useful timeframes with quantifiable confidence levels.
 
-4. **Investment Decision Support**: Provide actionable recommendations on optimal entry points and target prices based on user-defined profit goals.
+4. Provide recommendations on optimal entry points and target prices based on user-defined profit goals.
 
-5. **Correlation Analysis**: Identify and visualize relationships between different cryptocurrencies to support portfolio diversification strategies.
+5. Identify and visualise relationships between different cryptocurrencies to support portfolio diversification strategies.
 
-6. **Usability Focus**: Design an intuitive interface that balances analytical depth with accessibility for the target audience of researchers and cryptocurrency novices.
-
-7. **Technical Implementation**: Utilize Python for both backend processing and machine learning components, with Streamlit for frontend development to ensure rapid iteration and deployment capabilities.
+6. Utilise Python for both backend processing and machine learning components, with Streamlit for frontend development to ensure rapid iteration and deployment capabilities.
 
 ## Analysis, Evaluation and Results
 
@@ -46,7 +44,7 @@ The data pipeline begins with collection from the Binance API, chosen for its re
 
 The preprocessing workflow consists of several key stages:
 
-1. **Initial Cleaning**: Handling missing values, removing outliers, and ensuring consistent datetime formatting across all datasets.
+1. **Data Cleaning**: Handling missing values, removing outliers, reducing multi-level indexes and ensuring consistent datetime formatting across all datasets.
 
 2. **Feature Engineering**: Creating technical indicators and derived features that capture market dynamics:
    - Lagged features (1, 3, 5-day) to capture short-term momentum
@@ -57,151 +55,242 @@ The preprocessing workflow consists of several key stages:
 
 3. **Sequence Creation**: Generating input-output pairs for model training, with 60-day input windows mapped to 30-day forecast horizons, creating a sliding window approach for multi-step forecasting.
 
-4. **Stationarity Analysis**: Applying time series decomposition and Augmented Dickey-Fuller tests to assess stationarity properties of different cryptocurrencies. As identified in the analysis, Bitcoin (BTC) demonstrated non-stationarity with a high p-value, while Binance Coin (BNB) showed more stationary characteristics.
+### Clustering and Correlation
 
-The distribution analysis revealed asymmetric patterns with heavy left or right tails for most cryptocurrencies, with Bitcoin showing particularly high kurtosis. These non-normal distributions informed the selection of modeling approaches that could handle such data characteristics.
+K-means clustering was used to determine relationships between cryptocurrencies. K-means clustering was chosen for its efficiency in identifying logical groupings of data (TODO CITE).
+
+Using a dataset containing last year's close prices of the top 30 market cap coins, the dataset was transformed from long to wide format i.e each day's close price as columns and a single row for each coin. Providing each coin as an observation for clustering with a rich set of features. To aid clustering performance, the dimensionality of the data was reduced to its optimal principal components (2).
+
+![](images/pca-explained-variance.png)  
+*Figure - Explained variance*
+
+![](images/silhouette.png)  
+*Figure - Silhouette scores - K-means clustering*
+
+Silhouette scoring was used to determine the optimal number of clusters. While fewer clusters achieved a higher score, higher-granularity could be achieved with four clusters while maintaining a strong separation performance (> 0.9).
+
+![](images/pca_clusters.png)  
+*Figure - Scatter Plot - Four clusters Plotted Against Principal Components*
+
+The clusters provided a starting point for capturing different market states. Bitcoin variants were clustered together; this asset has demonstrated a significant increase in value, particularly over the past year. Etherium variants are clustered, representing a coin with significant price fluctuations, generally decreasing over the past year. BNB and Bitcoin Cash are clustered, both have been holding a stable value over the past year. The final cluster represent coins of lower value which haven't significantly increased in value.
+
+From these four clusters, a representative coin was selected from each cluster for model evaluation.
+
+Correlation analysis identifies coins that follow or oppose the market behaviour for the representative coins. This shall be leveraged to provide portfolio diversification insights.
+
+|         |   BTC-USD |   WBTC-USD |   DOGE-USD |   HBAR-USD |    PI-USD |   TON-USD |   USDT-USD |    USDC-USD |
+|:--------|----------:|-----------:|-----------:|-----------:|----------:|----------:|-----------:|------------:|
+| BNB-USD |   0.82948 |   0.829018 |   0.806936 |   0.786174 | -0.193981 | -0.159604 | -0.0985299 | -0.00642017 |
+
+|         |   WBTC-USD |   LEO-USD |   DOGE-USD |   XLM-USD |   TON-USD |    PI-USD |   USDC-USD |   USDT-USD |
+|:--------|-----------:|----------:|-----------:|----------:|----------:|----------:|-----------:|-----------:|
+| BTC-USD |   0.999971 |  0.954715 |   0.931514 |  0.930809 | -0.297925 | -0.201206 | -0.0540657 |  0.0495566 |
+
+|         |   STETH-USD |   WETH-USD |   WSTETH-USD |   DOT-USD |    OM-USD |   TRX-USD |   USDC-USD |   USDT-USD |
+|:--------|------------:|-----------:|-------------:|----------:|----------:|----------:|-----------:|-----------:|
+| ETH-USD |    0.999967 |   0.999826 |     0.997976 |  0.848954 | -0.120443 | 0.0450684 |  0.0738517 |  0.0772101 |
+
+|         |   HBAR-USD |   ADA-USD |   XRP-USD |   WBTC-USD |   TON-USD |   USDC-USD |   USDT-USD |   PI-USD |
+|:--------|-----------:|----------:|----------:|-----------:|----------:|-----------:|-----------:|---------:|
+| LTC-USD |   0.894071 |  0.884937 |    0.8645 |    0.86442 | -0.106227 | 0.00487731 |  0.0608996 | 0.132695 |
+
+*Table - Top Positively and Negatively Correlated Coins - Pearson Correlation*
+
+### Exploratory Data Analysis and Time-Series Decomposition
+
+1. Stationarity: Applying time series decomposition and Augmented Dickey-Fuller tests to assess stationarity properties of different cryptocurrencies. For example, Bitcoin (BTC) demonstrated non-stationarity with a high p-value, while Binance Coin (BNB) showed more stationary characteristics.
+
+|         |      ADF |    P_Value |       1% |       5% |      10% | Stationary   |
+|:--------|---------:|-----------:|---------:|---------:|---------:|:-------------|
+| BNB-USD | -3.67848 | 0.00442625 | -3.44844 | -2.86951 | -2.57102 | True         |
+| BTC-USD | -1.1333  | 0.701611   | -3.44844 | -2.86951 | -2.57102 | False        |
+| ETH-USD | -2.05408 | 0.263377   | -3.44844 | -2.86951 | -2.57102 | False        |
+| LTC-USD | -1.96639 | 0.301503   | -3.44844 | -2.86951 | -2.57102 | False        |
+  *Table - Statoinarity Analysis - ADF Test*
+
+2. Distribution: revealed asymmetric patterns with heavy left or right tails for most cryptocurrencies, with Bitcoin showing particularly high kurtosis.
+
+![](images/coin_box.png)  
+*Figure - Box Plots*
+
+![](images/freq-dist.png)  
+*Figure - Frequency Distribution Plots*
+
+3. Distrubtion over annual intervals: a general shift from postiviely skewed data to negatviely skewed from 2021 to 2025 with an increase in kurtosis. Indicating, increasing close price values and with a higher liklihood of extreme values. Litecoin being the exception which maintained a consistent concentration of close prices in a lower range.
+
+![](images/bnb_dist.png)  
+*Figure - Histograms over annual intervals - BNB*
+
+![](images/btc_dist.png)  
+*Figure - Histograms over annual intervals - BTC*
+
+These non-normal distributions and lack of consistent patterns between coins that could be derived from decomposition (i.e trend and seasonality), informed the selection of modeling approaches that could handle such data characteristics.
+
+4. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering.
+
+![](images/btc-pacf.png)  
+*Figure - Partial Autocorrelation - BTC*
+
+I.e. two to three time lags of statistical significance.
 
 ### Model Selection and Optimization
 
 The model selection process employed a structured evaluation of multiple forecasting approaches:
 
-1. **Baseline Models**:
-   - Naive forecasting: Using the last observed value as the prediction
-   - ARIMA: Traditional time series forecasting with autoregressive and moving average components
-   - Exponential Smoothing: Capturing trends and seasonality through exponential weighting
+1. **Statistical Models**:
+   - ARIMA: Traditional time series forecasting with autoregressive and moving average components.
+   - Exponential Smoothing: Assumes no trend or seasonality and the ability to bias short-term dependencies through exponential weighting.
 
-2. **Advanced Machine Learning Models**:
-   - Random Forest with conditional deseasonalization and detrending
-   - AdaBoost ensemble methods
-   - XGBoost with optimized hyperparameters
-   - Prophet (Facebook's forecasting tool)
+2. **Machine Learning Models**:
+   - Random Forest.
+   - XGBoost with optimised hyperparameters.
+   - Prophet (Facebook's forecasting tool).
 
-The evaluation metrics included Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), Mean Absolute Percentage Error (MAPE), and Symmetric Mean Absolute Percentage Error (SMAPE) to provide a comprehensive assessment of model performance.
+The evaluation metrics included Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), Mean Absolute Percentage Error (MAPE) and R-squared score; to assess model performance.
 
-PyCaret was utilized for efficient model optimization, with a specific focus on the first target day prediction to establish optimal hyperparameters. The optimization process, as illustrated in Figure 1, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
+PyCaret was utilised for efficient model optimisation. The optimisation process, as illustrated in Table 1, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
+
+```Python
+from pycaret.regression import *
+
+# PyCaret Regression Setup
+xgb_exp = RegressionExperiment().setup(
+    data=btc_train, 
+    target="close",
+    session_id=123, 
+    fold=3,  # K-fold cross-validation
+    data_split_shuffle=False,  # **Important: Keeps time-series order**
+    fold_strategy="timeseries",  # Ensures time-series split
+)
+
+# Train XGBoost Model
+xgb_model = xgb_exp.create_model('xgboost')
+```
+*Figure 1 - XGBoost Experiment Code*
+
+| Fold | MAE       | MSE          | RMSE     | R2     | RMSLE  | MAPE   |
+|------|-----------|--------------|----------|--------|--------|--------|
+| 0    | 2938.3538 | 14330692.0000 | 3785.5901 | 0.8402 | 0.0746 | 0.0587 |
+| 1    | 1338.6779 | 2871917.7500  | 1694.6733 | 0.9695 | 0.0639 | 0.0507 |
+| 2    | 760.8511  | 1206861.2500  | 1098.5724 | 0.9399 | 0.0435 | 0.0298 |
+| **Mean** | **1679.2943** | **6136490.3333** | **2192.9453** | **0.9165** | **0.0607** | **0.0464** |
+| **Std**  | **921.0118**  | **5833912.8666** | **1152.1638** | **0.0553** | **0.0129** | **0.0122** |
+*Table 1 XGBoost Cross Validation Results - Initial Experiment with 5 year BTC Close Price Data*
 
 XGBoost emerged as the best-performing model due to its ability to capture non-linear relationships and handle the high volatility characteristic of cryptocurrency data. The model was configured with the following key parameters:
 
 - Subsample: 0.8 (to reduce overfitting)
 - Max depth: 4 (balancing model complexity with generalization)
-- Learning rate: 0.05 (enabling fine-grained learning)
+- Learning rate: 0.05 (enabling regularisation between training iterations)
 - Number of estimators: 180 (providing sufficient model complexity)
 
 To facilitate multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This approach, validated through extensive backtesting, demonstrated superior performance compared to recursive single-step forecasting methods.
+
+The MultiOutputRegressor simplified multi-step forecasting with exogenous variables, providing further performance improvments over univariate regression.
 
 ### Model Evaluation Results
 
 The model evaluation revealed significant performance variations across different cryptocurrencies:
 
-**Bitcoin (BTC)**:
-- Multi-step model MAE: 24,084.70
-- Multi-step model MSE: 817,797,760.33
-- Multi-step model R²: -2.17
-
-**Ethereum (ETH)**:
-- Multi-step model MAE: 361.15
-- Multi-step model MSE: 214,700.79
-- Multi-step model R²: 0.36
-
-**Litecoin (LTC)**:
-- Multi-step model MAE: 10.41
-- Multi-step model MSE: 235.69
-- Multi-step model R²: 0.49
-
-**Binance Coin (BNB)**:
-- Multi-step model MAE: 141.15
-- Multi-step model MSE: 26,788.53
-- Multi-step model R²: -6.54
+| Cryptocurrency | MAE        | MSE            | R²    |
+|----------------|------------|----------------|-------|
+| Bitcoin (BTC)  | 24,084.70  | 817,797,760.33 | -2.17 |
+| Ethereum (ETH) | 361.15     | 214,700.79     | 0.36  |
+| Litecoin (LTC) | 10.41      | 235.69         | 0.49  |
+| Binance Coin (BNB) | 141.15 | 26,788.53      | -6.54 |
+*Table 2 - XGBoost Evaluation Across Multiple Cyptocurrencies*
 
 These results highlight several important observations:
 
-1. **Scale Dependence**: The absolute error metrics (MAE, MSE) vary significantly based on the price scale of each cryptocurrency.
+1. The absolute error metrics (MAE, MSE) vary significantly based on the price scale of each cryptocurrency.
 
-2. **Relative Performance**: When normalized for price levels, Litecoin showed the best predictive performance with an R² of 0.49, indicating that the model captured approximately 49% of the price variance.
+2. Litecoin showed the best predictive performance with an R² of 0.49, indicating that the model captured approximately 49% of the price variance.
 
-3. **Challenging Currencies**: Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than a simple mean predictor for these assets.
+3. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than a simple mean predictor for these assets.
+
+The short-term partial autocorrelation and performance scores highlight the importance of training the model on as much recent data as possible. Table 2, presents scores determined over a holdout period (20 %) equivalent to one year of data.
 
 Further experiments with feature combinations and model configurations revealed that:
 
-1. Using lag-3 features consistently produced better results than using lag-1 or multiple lags combined.
+1. Using two to three short-term time lag features consistently produced better results than using lag-1 or multiple longer term (i.e 7, 14 and 30 day) lags combined.
 
 2. Including technical indicators (RSI, moving averages) improved performance for Ethereum and Litecoin but had minimal impact on Bitcoin predictions.
 
-3. The performance discrepancies across currencies correlate with their stationarity properties, supporting the hypothesis that more stationary assets are inherently more predictable.
+3. The performance discrepancies across currencies correlate with their non-stationary properties, supporting the hypothesis that stationary assets are inherently more predictable.
 
-The final model configuration adopted a currency-specific approach, using the best-performing feature set and hyperparameters for each cryptocurrency. This decision prioritized forecast accuracy over architectural consistency, aligning with the project's objective of maximizing predictive performance.
+The final model configuration adopted a best-fit approach, using the best-performing feature set and hyperparameters accross coins selected from each cluster. This decision prioritised forecast accuracy, aligning with the project's objective of maximising predictive performance.
 
 ## Interactive Dashboard Development
 
-The dashboard implementation utilized Streamlit, a Python library specifically designed for creating data applications with minimal frontend development overhead. This choice enabled rapid iteration and deployment while maintaining full access to Python's data science ecosystem.
+The dashboard implementation utilsed Streamlit, a Python library designed for creating data applications with minimal frontend development overhead. This choice enabled rapid iteration and deployment while maintaining full access to Python's data science ecosystem.
 
-### Architecture and Components
+### Design Overview
 
-The dashboard architecture follows a modular design with distinct functional components:
+The dashboard architecture implements distinct functional components:
 
-1. **Data Management**:
-   - API connectivity via the `get_crypto_data()` function
-   - Fallback mechanism through `generate_mock_data()`
-   - News retrieval via `get_crypto_news()`
-   - Caching layer with `@st.cache_data` for performance optimization
+1. **Data management**:
+   - API connection via the `get_crypto_data()` function.
+   - Fallback mechanism through `generate_mock_data()`.
+   - News retrieval via `get_crypto_news()`.
+   - Caching with `@st.cache_data` for performance optimisation.
 
-2. **Feature Processing**:
-   - Technical indicator generation in `add_features()`
-   - Sequence creation for model input in `create_sequences()`
-   - Market state assessment in `get_market_state()`
+2. **Feature processing**:
+   - Technical indicator generation in `add_features()`.
+   - Sequence creation for model input in `create_sequences()`.
+   - Market state assessment in `get_market_state()`.
 
-3. **Forecasting Components**:
-   - Model training pipeline in `train_forecast_model()`
-   - Investment recommendation engine in `calculate_buy_recommendation()`
-   - What-if scenario analysis in `calculate_profit_scenarios()`
+3. **Forecasting components**:
+   - Model training pipeline in `train_forecast_model()`.
+   - Investment recommendation in `calculate_buy_recommendation()`.
+   - What-if scenario analysis in `calculate_profit_scenarios()`.
 
-4. **Visualization Modules**:
+4. **Visualisation modules**:
    - Price history charts
    - Moving average visualizations
    - Forecast projection with confidence intervals
    - Correlation heatmaps
    - Performance metrics displays
 
-The user interface employs a tab-based navigation system to organize related visualizations and controls, maintaining consistent state across different views. This structure preserves shared context (selected cryptocurrency, time range) while compartmentalizing specific analytical functions.
+The user interface employs tab-based navigation to organise related visualisations and controls, maintaining consistent visual style. This structure preserves shared context (selected cryptocurrency, time range) while organising specific analytical functions.
 
 ### User Interface Features
 
 The dashboard provides several key user interface elements designed for intuitive interaction:
 
-1. **Control Panel**:
-   - Cryptocurrency selector with support for major coins (BTC, ETH, SOL, ADA, XRP)
-   - Time interval slider for adjusting analysis timeframes (7-90 days)
-   - Target profit parameter for customizing investment recommendations
-   - Data refresh button for real-time updates
+1. **Dashboard controls**:
+   - Cryptocurrency selector with support for major coins (BTC, ETH, LTC, BNB).
+   - Time interval slider for adjusting analysis timeframes (7, 14, 30, 60 and 90 days).
+   - Target profit parameter for customising investment recommendations.
+   - Data refresh button for real-time updates.
 
-2. **Market Overview**:
-   - Current price display with change indicators
-   - Volatility metrics calculated over a 30-day window
-   - Market state assessment (bullish/bearish) with confidence rating
-   - 24-hour trading volume metrics
+2. **Market overview**:
+   - Current price display with change indicators.
+   - Volatility metrics calculated over a 30-day window.
+   - Market state assessment (bullish/bearish) with confidence rating.
+   - 24-hour trading volume metrics.
 
-3. **Analysis Tabs**:
-   - Price History: Line charts showing historical price movements
-   - Moving Averages: Technical analysis view with 7-day and 30-day MAs
-   - Price Forecast: Projection charts with confidence intervals
+3. **Analysis tabs**:
+   - Price History: Line charts showing historical price movements.
+   - Moving Averages: Technical analysis view with 7-day and 30-day MAs.
+   - Price Forecast: Projection charts with confidence intervals.
 
-4. **Correlation Analysis**:
-   - Positive correlation panel showing most closely aligned assets
-   - Negative correlation panel highlighting diversification opportunities
-   - Interactive correlation strength indicators
+4. **Correlation analysis**:
+   - Positive correlation panel showing most closely aligned assets.
+   - Negative correlation panel highlighting diversification opportunities.
+   - Pearson correlation strength indicators.
 
-5. **Investment Support**:
-   - Buy recommendation card with optimal entry date and price
-   - Sell target calculation based on user-defined profit goals
-   - Confidence metric for recommendation reliability
-   - What-if analysis showing potential returns for different scenarios
+5. **Investment calculator**:
+   - Buy recommendation card with recommended buy-date and price.
+   - Sell target calculation based on user-defined profit goals.
+   - Confidence metric for recommendation reliability.
+   - What-if analysis showing potential returns for different scenarios.
 
-6. **Supplementary Information**:
-   - Recent news panel with cryptocurrency-specific headlines
-   - Key performance indicators section with market capitalization and volume
-   - Major coins trend prediction with probability indicators
+6. **Supplementary information**:
+   - Recent news panel with cryptocurrency-specific headlines.
+   - Key performance indicators section with market capitalisation and volume.
+   - Major coins trend prediction with probability indicators.
 
-The visual design employs a consistent color scheme with semantic meaning (green for positive changes, red for negative) and responsive layouts that adapt to different screen sizes. Card-based components with clear visual hierarchy enhance information scannability, while interactive elements provide immediate feedback to user actions.
+The visual design employs a consistent color scheme with semantic meaning (green for positive changes, red for negative) and responsive layouts that adapt to different screen sizes. Card-based components with clear visual hierarchy enhance readability, while interactive plots provide fine-grained information.
 
 ## Limitations, Challenges and Future Enhancements
 
@@ -209,86 +298,76 @@ The visual design employs a consistent color scheme with semantic meaning (green
 
 The dashboard implementation faces several limitations that affect its utility and performance:
 
-1. **Computational Performance**:
-   - The forecasting process requires approximately one minute to complete when a coin is selected or data is refreshed, impacting the real-time analysis experience.
-   - This latency stems from the complex feature engineering pipeline and the computational demands of the XGBoost model, particularly in the multi-step configuration.
+1. The forecasting process requires approximately one minute to complete when a coin is selected or data is refreshed, impacting the real-time analysis experience.
+   - This latency stems from the and the computational demands of the XGBoost model training, compounded by the multi-step configuration.
 
-2. **Model Inconsistency**:
-   - The forecasting performance varies significantly across different cryptocurrencies, with Bitcoin showing particularly poor results despite being the most commonly analyzed asset.
+2. The forecasting performance varies significantly across different cryptocurrencies, with Bitcoin showing particularly poor results despite being the most commonly analyzed asset.
    - This inconsistency complicates the user experience, as reliability expectations must be managed differently for each cryptocurrency.
 
-3. **API Resilience**:
-   - While a fallback mechanism exists for API unavailability, the caching strategy could be improved to better handle intermittent connectivity issues.
-   - The dashboard should implement more sophisticated cache invalidation policies to balance freshness with availability.
+3. The dashboard should implement more sophisticated cache mechanisms to balance freshness with availability. For example, saving live data and using this during periods of API unavailability, refreshing the static dataset when it becomes stale.
 
-4. **Validation Limitations**:
-   - Cross-validation approaches for time series data remain challenging, with potential for temporal data leakage despite the implemented safeguards.
-   - The evaluation metrics might not fully capture the practical utility of forecasts for investment decision-making.
+4. The evaluation metrics might not fully capture the practical utility of forecasts for investment decision-making (TODO cite).
 
 ### Technical Challenges
 
 Several technical challenges emerged during development:
 
-1. **Data Stationarity**:
-   - As identified in the EDA phase, most cryptocurrencies exhibit non-stationary behavior that traditional time series models struggle to handle.
+1. **Data stationarity**:
+   - Most cryptocurrencies exhibit non-stationary behavior that traditional time series models struggle to handle.
    - Transformation techniques (differencing, log transformation) provided limited improvement in making the data more amenable to modeling.
 
-2. **Multi-Step Forecasting**:
-   - The direct multi-step approach using MultiOutputRegressor introduces high model complexity and training requirements.
+2. **Multi-Step forecasting**:
+   - The direct multi-step approach using MultiOutputRegressor introduced model complexity and training requirements.
    - Error propagation in long-horizon forecasts remains problematic, with accuracy degrading significantly beyond 14 days.
 
-3. **Feature Engineering Scale**:
-   - The extensive feature engineering process creates computational bottlenecks in the real-time dashboard context.
-   - Balancing feature richness with performance requirements necessitated compromises in the final implementation.
+3. **Feature engineering at scale**:
+   - Balancing feature richness with performance requirements necessitated compromises in the final implementation. 
 
 ### Future Enhancements
 
 Based on the identified limitations and challenges, several future enhancements are proposed:
 
 1. **Performance Optimization**:
-   - Implement asynchronous model training and caching of intermediary results to reduce latency.
-   - Explore model distillation techniques to create smaller, faster models that approximate the performance of the full XGBoost ensemble.
-   - Optimize the feature engineering pipeline through vectorized operations and parallel processing.
+   - Create smaller, faster models that approximate the performance of the full XGBoost ensemble.
+   - Iterative model training on short-term data, trained initially on long-term data and deployed to the application.
 
-2. **Model Improvements**:
-   - Develop cryptocurrency-specific model architectures based on their statistical properties.
-   - Investigate deep learning approaches, particularly LSTM and Transformer architectures, that may better capture long-range dependencies in price data.
-   - Implement ensemble methods that combine multiple model types to increase robustness.
+2. **Application stability**:
+   - Implement a queueing mechanism to mitigate API limit restrictions.
+   - Cache live data as a temporary fallback to maintain a consistent level of service.
 
-3. **Enhanced Features**:
+3. **Model Improvements**:
+   - Develop a cryptocurrency-specific model architecture which captures the inter-cluster differences between representative coins.
+   - Investigate deep learning approaches i.e LSTM, that may better capture long-range dependencies in price data.
+   - Implement ensemble methods that combine multiple model types or configurations to increase robustness.
+
+4. **Enhanced features**:
    - Incorporate sentiment analysis from news and social media to capture market mood indicators.
    - Add on-chain metrics (transaction volume, active addresses) as additional features for improved forecasting.
-   - Develop customizable risk profiles that adjust recommendations based on user risk tolerance.
+   - Develop discrete risk profiles that adjust recommendations based on user risk preference.
 
-4. **Expanded Capabilities**:
-   - Extend analysis to include decentralized finance (DeFi) tokens and metrics.
-   - Implement portfolio optimization tools that leverage the correlation analysis.
+5. **Expanded capabilities**:
+   - Implement portfolio optimisation tools that leverage the correlation analysis.
    - Add scenario modeling for major market events (regulatory changes, technological developments).
-
-5. **User Experience Refinements**:
-   - Develop progressive loading strategies that prioritize critical dashboard components.
-   - Implement guided tours and contextual help for novice users.
-   - Add customizable alerts for price thresholds and prediction-based triggers.
 
 ## Conclusion
 
-The cryptocurrency forecasting dashboard successfully addresses the initial objectives by providing an integrated platform for market analysis, visualization, and prediction. The implementation demonstrates several key achievements:
+The cryptocurrency forecasting dashboard addresses the initial objectives by providing an integrated platform for market analysis, visualisation, and prediction. The implementation demonstrates key achievements:
 
-1. **Effective Integration**: The system successfully combines real-time data access, advanced modeling techniques, and interactive visualizations in a coherent user experience.
+1. Combining real-time data access, modeling techniques, and interactive visualisations in a coherent user experience.
 
-2. **Analytical Depth**: The multiple analysis views provide complementary perspectives on cryptocurrency markets, from historical patterns to forecasted trends and correlation structures.
+2. Complementary perspectives on cryptocurrency markets, from historical patterns to forecasted trends and asset correlation.
 
-3. **Decision Support**: The investment recommendation and what-if analysis components transform abstract predictions into actionable insights tailored to user preferences.
+3. Investment recommendation and what-if analysis components transform predictions into actionable insights tailored to user preferences.
 
-4. **Technical Innovation**: The multi-step forecasting approach using optimized XGBoost models represents a practical application of state-of-the-art machine learning techniques to the challenging domain of cryptocurrency prediction.
+4. Multi-step forecasting approach using optimised XGBoost models represents a practical application of machine learning techniques in a challenging domain.
 
-However, the varying model performance across different cryptocurrencies highlights the inherent challenges in this domain. The significant differences in predictability between Bitcoin, Ethereum, and Litecoin suggest that cryptocurrency-specific modeling approaches may be necessary for optimal results.
+However, the varying model performance across different cryptocurrencies highlights the inherent challenges in this domain. The significant differences in predictability between Bitcoin, Ethereum, and Litecoin suggest that cryptocurrency-specific modeling approaches are necessary for better results.
 
-Despite these challenges, the dashboard provides substantial value as both an analytical tool and a research platform. For cryptocurrency newcomers, it offers accessible visualizations and simplified decision support. For researchers, it provides a foundation for exploring alternative modeling approaches and feature engineering techniques.
+Despite these challenges, the dashboard provides value as both an analytical tool and a research platform. For cryptocurrency newcomers, it offers accessible visualisations and simplified decision support. For researchers, it provides a foundation for exploring alternative modeling approaches and feature engineering techniques.
 
-Future work should focus on addressing the identified limitations, particularly in terms of performance optimization and model accuracy for challenging cryptocurrencies like Bitcoin. The incorporation of additional data sources, especially sentiment and on-chain metrics, presents promising avenues for enhancing the predictive capabilities of the system.
+Future work should focus on addressing the identified limitations, particularly in terms of performance optimisation and model accuracy for challenging cryptocurrencies like Bitcoin. The incorporation of additional data sources, especially sentiment and on-chain metrics, presents avenues for enhancing the predictive capabilities of the system.
 
-In conclusion, the cryptocurrency forecasting dashboard represents a significant step toward more informed, data-driven decision-making in the volatile cryptocurrency markets, while also highlighting the continuing challenges in financial time series forecasting for these novel asset classes.
+In conclusion, the cryptocurrency forecasting dashboard represents a step toward more informed, data-driven decision-making in the volatile cryptocurrency markets, while also highlighting the continuing challenges in financial time series forecasting.
 
 ## References
 
@@ -312,7 +391,15 @@ Chen, T. and Guestrin, C. (2016) 'XGBoost: A Scalable Tree Boosting System', Pro
 
 Sirignano, J. and Cont, R. (2019) 'Universal features of price formation in financial markets: perspectives from deep learning', Quantitative Finance, 19(9), pp. 1449-1459.
 
+----
+
 ## Appendix
+
+### Project repository
+
+The readme contains an overview of the analysis notebooks and their location. In addition, installation and running instructions:
+
+https://github.com/RalleyD/COM724_AE2
 
 ### Model Performance Metrics
 
