@@ -280,6 +280,40 @@ def get_correlations(base_symbol, all_symbols=None):
 
 # ----- Data Processing Functions -----
 
+def create_sequences(data, window=60, horizon=30, step=1):
+    """Create sequences while tracking corresponding dates"""
+    x = []
+    y = []
+    target_dates = []
+    
+    # Extract the target values
+    target_col = "original_close" if "original_close" in data.columns else 'close'
+    target = data[target_col].values
+    
+    # Get the feature columns
+    feature_cols = [col for col in data.columns if col != target_col and col != 'close']
+    
+    # Extract the feature values
+    features = data.loc[:, feature_cols].values
+    
+    # Loop over the dataset
+    for i in range(0, len(data) - window - horizon + 1, step):
+        # Get input window
+        x_i = features[i:i+window]
+        
+        # Get target sequence
+        y_i = target[i+window:i+window+horizon]
+        
+        # Get target dates
+        y_dates = data.index[i+window:i+window+horizon]
+        
+        # Make sure we have complete sequences
+        if len(x_i) == window and len(y_i) == horizon:
+            x.append(x_i.flatten())
+            y.append(y_i)
+            target_dates.append(y_dates)
+    
+    return np.array(x), np.array(y), target_dates
 
 @st.cache_data
 def get_top_30() -> list:
@@ -295,7 +329,11 @@ def add_features(df):
     """Add technical indicators and features to the dataframe"""
     # Create a copy of the dataframe
     data = df.copy()
-    original_close = data['close'].copy()
+    original_close = data['close'].copy()  # Save original close for target
+
+    # Add lagged features
+    for lag in [1, 2, 3, 5, 7, 14, 30]:
+        data[f'close_lag_{lag}'] = data['close'].shift(lag)
 
     # Add rolling stats
     data['ma7'] = data['close'].rolling(window=7).mean()
@@ -313,25 +351,24 @@ def add_features(df):
     rs = gain / loss
     data['rsi'] = 100 - (100 / (1 + rs))
 
-    # ffill where possible
+    # Forward fill missing values
     data = data.ffill()
-    # Drop rows with NaN values
+    # Drop any remaining NaN values
     data = data.dropna()
     
-    # scale derived features
+    # Scale features
     features = data.columns
     scaler = RobustScaler()
     valid_data = data[features]
     scaler.fit(valid_data)
-    # apply to all derived features
+    # Apply scaling to all features
     data[features] = scaler.transform(data[features])
 
-    # restore original close values for target
+    # Restore original close values for target
     data['original_close'] = original_close
     
-    # ffill where possible
+    # Final cleanup
     data = data.ffill()
-    # Drop rows with NaN values
     data = data.dropna()
 
     return data
@@ -339,18 +376,22 @@ def add_features(df):
 
 @st.cache_data
 def train_forecast_model(df, forecast_horizon=90, input_window=180):
-    """Train an XGBoost model for multi-step forecasting"""
-    # Prepare features
-    train_split = 0.8
+    """Train an XGBoost model for multi-step forecasting with proper scaling and continuity"""
+    # Prepare features - drop unnecessary columns first
+    if 'symbol' in df.columns:
+        df = df.drop('symbol', axis=1)
+    if 'volume' in df.columns:
+        df = df.drop('volume', axis=1)
     
     df_features = add_features(df)
-    target_col = 'original_close'
     
-    print(df_features.head(3))
+    # Define train/test split
+    train_split = 0.8
     
+    # Set up PyCaret experiment
     experiment = RegressionExperiment().setup(
         data=df_features,
-        target=target_col,
+        target='original_close',  # Use original prices as target
         data_split_shuffle=False,
         fold=5,
         fold_strategy='timeseries',
@@ -362,57 +403,39 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
         verbose=False
     )
     
+    # Create and tune model
     xgb = experiment.create_model("xgboost")
     xgb_tuned = experiment.tune_model(xgb)
     
+    # Get transformed dataset
     final_df = experiment.dataset_transformed
 
-    # Define target and feature columns
-    feature_cols = [col for col in final_df.columns if col != target_col]
+    # Define feature columns (excluding target)
+    feature_cols = [col for col in final_df.columns if col != 'original_close' and col != 'close']
 
-    # Prepare X (input) and y (target) data for training
-    X, y = [], []
+    # Create sequences for training
+    X, y, target_dates = create_sequences(final_df, window=input_window, horizon=forecast_horizon)
 
-    # For each possible start point
-    for i in range(len(final_df) - input_window - forecast_horizon + 1):
-        # Input window
-        X.append(final_df.iloc[i:i+input_window]
-                 [feature_cols].values.flatten())
-
-        # Target: next forecast_horizon closing prices
-        y.append(final_df.iloc[i+input_window:i +
-                 input_window+forecast_horizon][target_col].values)
-
-    X = np.array(X)
-    y = np.array(y)
-
+    # Create MultiOutputRegressor
     model = MultiOutputRegressor(xgb_tuned)
+    
+    # Train on all data before forecasting
     model.fit(X, y)
 
     # Get latest input window for forecasting
-    latest_input = final_df.iloc[-input_window:
-                                    ][feature_cols].values.flatten().reshape(1, -1)
+    latest_window = final_df.iloc[-input_window:][feature_cols].values.flatten().reshape(1, -1)
 
     # Make forecast
-    forecast = model.predict(latest_input)[0]
+    forecast = model.predict(latest_window)[0]
     
-    # scale forcast values (if needed)
-    last_historic_price = df['close'].iloc[-1]
+    # Add continuity adjustment
+    last_actual_price = df_features['original_close'].iloc[-1]
     first_forecast_price = forecast[0]
-    scaling_factor = last_historic_price / first_forecast_price
-    scale = False
-    if scaling_factor == 0:
-        scaling_factor = 1
-    elif scaling_factor > 1:
-        if scaling_factor > 1.1:
-            scale = True
-    elif scaling_factor < 1:
-        if scaling_factor < 0.9:
-            scale = True
-
-    if scale:
-        print("scaling by a factor: ", scaling_factor)
-        forecast = forecast * scaling_factor      
+    if first_forecast_price != 0:
+        adjustment_factor = last_actual_price / first_forecast_price
+        # Only apply significant adjustments
+        if adjustment_factor > 1.1 or adjustment_factor < 0.9:
+            forecast = forecast * adjustment_factor
     
     # Create forecast dates
     last_date = df.index[-1]
@@ -425,8 +448,7 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
         'predicted': forecast,
         'lower_bound': forecast * 0.95,  # Simplified confidence interval
         'upper_bound': forecast * 1.05,  # Simplified confidence interval
-        # Decreasing confidence over time
-        'confidence': np.linspace(0.9, 0.6, forecast_horizon)
+        'confidence': np.linspace(0.9, 0.6, forecast_horizon)  # Decreasing confidence over time
     })
 
     return forecast_df
@@ -541,11 +563,67 @@ def calculate_buy_recommendation(forecast_df: pd.DataFrame, target_profit):
 
 def calculate_moving_averages(df, windows=[7, 30]):
     """Calculate moving averages for specified windows"""
-    ma_data = df.copy()
+    ma_data: pd.DataFrame = df.copy()
 
     for window in windows:
         ma_data[f'ma{window}'] = df['close'].rolling(window=window).mean()
-
+        
+    # create buy and sell signals i.e x-axis points
+    
+    ma_buy_sell_df = ma_data.copy()
+    ma_buy_sell_df.dropna(inplace=True)
+    ma_data_iter = ma_buy_sell_df.itertuples()
+    current_short = next(ma_data_iter)
+    current_short_ma = current_short.ma7
+    curr_long_ma = current_short.ma30
+    current_short_id = current_short.Index
+    buy_signals = []
+    sell_signals = []
+    
+    for row in ma_data_iter:
+        # if np.isnan(row.ma7) or np.isnan(row.ma30):
+        #     # current_short_ma = row.ma7
+        #     # current_short_id = row.Index
+        #     continue
+        # if row.ma7 == row.ma30:
+        #     # is the short term average increasing
+        #     if row.ma7 > current_short:
+        #         # buy signal
+        #         buy_signals.append(row.ma7)
+        #         current_short = row.ma7
+        if row.ma7 >= row.ma30:
+            print("ma7 higher than long")
+            print(row.ma7, row.ma30)
+            print(current_short_ma)
+            print(row.Index)
+            if current_short_ma < row.ma30:
+                print("current short less than latest long")
+                print(current_short_id)
+                # buy signal
+                # if current_short_id != row.Index:
+                buy_signals.append(row.Index)
+            current_short_ma = row.ma7
+            
+                
+                    # current_short_id = row.Index
+        # elif row.ma7 < row.ma30:
+        #     if current_short_ma >= row.ma30:
+        #         print(current_short_ma)
+        #         print(current_short_id)
+        #         # sell signal
+        #         sell_signals.append(current_short_id)
+        #         current_short_ma = row.ma7
+        #         current_short_id = row.Index
+        else:
+            current_short_ma = row.ma7
+            # current_short_id = row.Index
+            # curr_long_ma = row.ma30
+            
+                
+    print("buy signals")
+    print(buy_signals)
+    print("sell signals")
+    print(sell_signals)                
     return ma_data
 
 
