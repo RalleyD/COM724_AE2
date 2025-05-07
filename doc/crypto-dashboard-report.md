@@ -63,16 +63,14 @@ K-means clustering was used to determine relationships between cryptocurrencies.
 
 Using a dataset containing last year's close prices of the top 30 market cap coins, the dataset was transformed from long to wide format i.e each day's close price as columns and a single row for each coin. Providing each coin as an observation for clustering with a rich set of features. To aid clustering performance, the dimensionality of the data was reduced to its optimal principal components (2).
 
-![](images/pca-explained-variance.png)  
-*Figure - Explained variance*
+![Figure: Explained variance](images/pca-explained-variance.png)  
 
-![](images/silhouette.png)  
-*Figure - Silhouette scores - K-means clustering*
+
+![Figure - Silhouette scores - K-means clustering](images/silhouette.png)  
 
 Silhouette scoring was used to determine the optimal number of clusters. While fewer clusters achieved a higher score, higher-granularity could be achieved with four clusters while maintaining a strong separation performance (> 0.9).
 
-![](images/pca_clusters.png)  
-*Figure - Scatter Plot - Four clusters Plotted Against Principal Components*
+![Figure - Scatter Plot - Four clusters Plotted Against Principal Components](images/pca_clusters.png)  
 
 The clusters provided a starting point for capturing different market states. Bitcoin variants were clustered together; this asset has demonstrated a significant increase in value, particularly over the past year. Etherium variants are clustered, representing a coin with significant price fluctuations, generally decreasing over the past year. BNB and Bitcoin Cash are clustered, both have been holding a stable value over the past year. The final cluster represent coins of lower value which haven't significantly increased in value.
 
@@ -96,7 +94,7 @@ Correlation analysis identifies coins that follow or oppose the market behaviour
 |:--------|-----------:|----------:|----------:|-----------:|----------:|-----------:|-----------:|---------:|
 | LTC-USD |   0.894071 |  0.884937 |    0.8645 |    0.86442 | -0.106227 | 0.00487731 |  0.0608996 | 0.132695 |
 
-*Table - Top Positively and Negatively Correlated Coins - Pearson Correlation*
+*Table: Top Positively and Negatively Correlated Coins - Pearson Correlation*
 
 ### Exploratory Data Analysis and Time-Series Decomposition
 
@@ -108,30 +106,25 @@ Correlation analysis identifies coins that follow or oppose the market behaviour
 | BTC-USD | -1.1333  | 0.701611   | -3.44844 | -2.86951 | -2.57102 | False        |
 | ETH-USD | -2.05408 | 0.263377   | -3.44844 | -2.86951 | -2.57102 | False        |
 | LTC-USD | -1.96639 | 0.301503   | -3.44844 | -2.86951 | -2.57102 | False        |
-  *Table - Statoinarity Analysis - ADF Test*
+  *Table: Statoinarity Analysis - ADF Test*
 
 2. Distribution: revealed asymmetric patterns with heavy left or right tails for most cryptocurrencies, with Bitcoin showing particularly high kurtosis.
 
-![](images/coin_box.png)  
-*Figure - Box Plots*
+![Figure: Box Plots](images/coin_box.png)  
 
-![](images/freq-dist.png)  
-*Figure - Frequency Distribution Plots*
+![Figure: Frequency Distribution Plots](images/freq-dist.png)  
 
 3. Distrubtion over annual intervals: a general shift from postiviely skewed data to negatviely skewed from 2021 to 2025 with an increase in kurtosis. Indicating, increasing close price values and with a higher liklihood of extreme values. Litecoin being the exception which maintained a consistent concentration of close prices in a lower range.
 
-![](images/bnb_dist.png)  
-*Figure - Histograms over annual intervals - BNB*
+![Figure: Histograms over annual intervals - BNB](images/bnb_dist.png)  
 
-![](images/btc_dist.png)  
-*Figure - Histograms over annual intervals - BTC*
+![Figure: Histograms over annual intervals - BTC](images/btc_dist.png)  
 
 These non-normal distributions and lack of consistent patterns between coins that could be derived from decomposition (i.e trend and seasonality), informed the selection of modeling approaches that could handle such data characteristics.
 
 4. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering.
 
-![](images/btc-pacf.png)  
-*Figure - Partial Autocorrelation - BTC*
+![Figure: Partial Autocorrelation - BTC](images/btc-pacf.png)  
 
 I.e. two to three time lags of statistical significance. (TODO check this!)
 
@@ -139,14 +132,11 @@ I.e. two to three time lags of statistical significance. (TODO check this!)
 
 Data transformation techniques were evaluated to determine whether the data could be normalised to aid statistical modeling. Transformation may help to stabilise the wide variance in the data, reducing the effect of extreme values while preserving the magnitude of the differences between observations.
 
-![](images/bnb-log-transform-diag.png)  
-*Figure Log Transformation Trend, Histogram, ACF, Q-Plot*
+![Figure: Log Transformation Trend, Histogram, ACF, Q-Plot](images/bnb-log-transform-diag.png)  
 
-![](images/bnb-sqrt-diag.png)  
-*Figure Square-root Transformation Trend, Histogram, ACF, Q-Plot*
+![Figure: Square-root Transformation Trend, Histogram, ACF, Q-Plot](images/bnb-sqrt-diag.png)  
 
-![](images/bnb-box-cox-diag.png)  
-*Figure Box-cox Transformation Trend, Histogram, ACF, Q-Plot*
+![Figure: Box-cox Transformation Trend, Histogram, ACF, Q-Plot](images/bnb-box-cox-diag.png)  
 
 Neither log, square-root or box-cox transformation were able to approximate normality or trend. This encouraged the evaluation of bootsing models that train iteratively on residuals. Additionally due to the long term autocorrelation with no seasonailty, it may also be worth experimenting with models that give weight to short term observations.
 
@@ -154,7 +144,7 @@ Neither log, square-root or box-cox transformation were able to approximate norm
 
 Utilising random forest regression to determine the relative importance of engineered features derived from the close prices.
 
-![](images/feature-importance-btc.png)
+![Figure: Feature Importance Using Random Forest](images/feature-importance-btc.png)
 
 Accross the representative cryptocurrencies, the following derived features returned the highest relative importance:
 
@@ -189,10 +179,9 @@ ARIMA models have been widely used in financial forecasting (Box et al., 2015) t
 | Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
 |:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
 | ARIMA   | 1.2824 |  1.0809 | 3192.87 | 3989.93 | 0.0391 |  0.0379 | -1.4911 |  
-*Table - Arima Performance Evaluation - BTC Past 5 Year Close Prices*
+*Table: Arima Performance Evaluation - BTC Past 5 Year Close Prices*
 
-![](images/arima-eval.png)  
-*Figure - Arima Prediction Line Plot*
+![Figure: Arima Prediction Line Plot](images/arima-eval.png)  
 
 Due to its popularity, it was selected for evaluation as a means to compare against other methods.
 
@@ -207,17 +196,16 @@ Single exponentia smoothing was selected for it's ability to perform regression 
 | Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
 |:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
 | Exponential Smoothing | 0.7698 |0.6517	| 5246.4672 | 6196.5309	| 0.0582	| 0.0556 |-1.3908 |  
-*Table - Exponential Smoothing Evaluation*
+*Table: Exponential Smoothing Evaluation*
 
 4. Differencing the data showed noticable improvement.
 
 | Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
 |------------------------|--------|--------|-----------|-----------|--------|--------|-------|
 | Exponential Smoothing | 1.2419 | 1.1864 | 1635.2009 | 2288.3155	 | 1.1406 | 1.4772 | -0.0723 |  
-*Table - Exponential Smoothing Evaluation - Differenced Data*
+*Table: Exponential Smoothing Evaluation - Differenced Data*
 
-![](images/exp-smooth-differenced-tuned.png)  
-*Figure - Tuned Exponential Smoothing Plot - Trained on Differenced Data*
+![Figure: Tuned Exponential Smoothing Plot - Trained on Differenced Data](images/exp-smooth-differenced-tuned.png)  
 
 #### Random Forest
 
@@ -226,7 +214,7 @@ Leverages ensemble decision trees to model complex non-linear relationships. It 
 | Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
 |------------------------|--------|--------|-----------|-----------|--------|--------|-------|
 | RandomForestRegressor | 1.1709 | 1.1426 | 1541.7756 | 2203.8583 | 1.3086 | 1.4074 | 0.0054 |  
-*Table - Random Forest Performance Evaluation*
+*Table: Random Forest Performance Evaluation*
 
 #### Prophet By Meta
 
@@ -234,15 +222,14 @@ Incorporates decomposable time-series models with trend and seasonality componen
 
 1. Lack of trend and seasonality.
 
-![](images/prophet-eval.png)  
-*Figure - Prophet Prediction Line Plot.*
+![Figure: Prophet Prediction Line Plot.](images/prophet-eval.png)  
 
 2. Due to the inherently noisy data with spurious historical peaks, Prophet appears too sensitive with changepoint detection.
 
 | Model   |    MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |       R2 |
 |:--------|--------:|--------:|--------:|--------:|-------:|--------:|---------:|
 | Prophet | 7.1681 | 5.3037 | 17327.8076 | 19026.5950 | 0.1915 | 0.1742 | -25.0629 |  
-*Table - Prophet Evaluation*
+*Table: Prophet Evaluation*
 
 Ultimately, leading to poor performance.
 
@@ -274,14 +261,14 @@ xgb_exp = RegressionExperiment().setup(
 # Train XGBoost Model
 xgb_model = xgb_exp.create_model('xgboost')
 ```
-*Figure 1 - XGBoost Experiment Code*
+*Figure: XGBoost Experiment Code*
 
 ----
 
 | Model                     | MAE       | MSE          | RMSE      | R²     | RMSLE  | MAPE   |
 |---------------------------|-----------|--------------|-----------|--------|--------|--------|
 | Extreme Gradient Boosting | 9053.9287 | 243341152.00 | 15599.3955 | 0.4389 | 0.1972 | 0.1044 |
-*Table 1 XGBoost Results - Initial Experiment with 5 year BTC Close Price Data*
+*Table: XGBoost Results - Initial Experiment with 5 year BTC Close Price Data*
 
 Utilising derived features for training the candidate model yielded 
 
@@ -303,7 +290,7 @@ This method was validated through extensive backtesting and yielded poorer perfo
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|-------|-----|
 | Bitcoin (BTC)  | 13740.86 | 384630252.17 | 19611.99 | -0.45 |  
-*Table - Multi-output XGBoost Regressor Scores*
+*Table: Multi-output XGBoost Regressor Scores*
 
 This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance.
 
@@ -317,7 +304,7 @@ The model evaluation revealed significant performance variations across differen
 | Ethereum (ETH) | 98.91     | 17331.24    | 131.65 | 0.94 |
 | Litecoin (LTC) | 3.30      | 27.25       | 5.22 |  0.94  |
 | Binance Coin (BNB) | 53.35 | 4863.66    | 69.74 | -0.37 |  
-*Table 2 - XGBoost Evaluation Across Multiple Cyptocurrencies*
+*Table: XGBoost Evaluation Across Multiple Cyptocurrencies*
 
 These results highlight several important observations:
 
@@ -325,7 +312,7 @@ These results highlight several important observations:
 
 2. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than an ensemble learning method for these assets.
 
-The short-term partial autocorrelation and performance scores highlight the importance of training the model on as much recent data as possible. Table 2, presents scores determined over a holdout period (20 %) equivalent to one year of data.
+The short-term partial autocorrelation and performance scores highlight the importance of training the model on as much recent data as possible. The table above, presents scores determined over a holdout period (20 %) equivalent to one year of data.
 
 Further experiments with feature combinations and model configurations revealed that:
 
