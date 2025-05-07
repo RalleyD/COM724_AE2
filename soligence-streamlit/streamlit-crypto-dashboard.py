@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from pycaret.regression import RegressionExperiment
 from backend.app.fetch_data_coingecko import get_top_30_coins
 import warnings
 
@@ -332,61 +333,65 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     target_col = 'close'
     
     df_features = add_features(df)
+    
+    experiment = RegressionExperiment().setup(
+        data=df_features,
+        target='close',
+        data_split_shuffle=False,
+        fold=5,
+        fold_strategy='timeseries',
+        session_id=456,
+        train_size=0.8,
+        remove_multicollinearity=True,
+        feature_selection=True,
+        feature_selection_estimator='rf',
+        verbose=False
+    )
+    
+    xgb = experiment.create_model("xgboost")
+    
+    xgb_tuned = experiment.tune_model(xgb)
+    
+    final_df = experiment.dataset_transformed
 
     # Define target and feature columns
-    feature_cols = [col for col in df_features.columns if col != target_col]
+    feature_cols = [col for col in final_df.columns if col != target_col]
 
     # Prepare X (input) and y (target) data for training
     X, y = [], []
 
     # For each possible start point
-    for i in range(len(df_features) - input_window - forecast_horizon + 1):
+    for i in range(len(final_df) - input_window - forecast_horizon + 1):
         # Input window
-        X.append(df_features.iloc[i:i+input_window]
+        X.append(final_df.iloc[i:i+input_window]
                  [feature_cols].values.flatten())
 
         # Target: next forecast_horizon closing prices
-        y.append(df_features.iloc[i+input_window:i +
+        y.append(final_df.iloc[i+input_window:i +
                  input_window+forecast_horizon][target_col].values)
 
     X = np.array(X)
     y = np.array(y)
 
     # Train model
-    base_model = XGBRegressor(
-        n_estimators=180,
-        learning_rate=0.05,
-        max_depth=4,
-        subsample=0.8,
-        colsample_bytree=0.9,
-        random_state=42
-    )
+    # base_model = XGBRegressor(
+    #     n_estimators=180,
+    #     learning_rate=0.05,
+    #     max_depth=4,
+    #     subsample=0.8,
+    #     colsample_bytree=0.9,
+    #     random_state=42
+    # )
 
-    model = MultiOutputRegressor(base_model)
+    model = MultiOutputRegressor(xgb_tuned)
     model.fit(X, y)
 
     # Get latest input window for forecasting
-    latest_input = df_features.iloc[-input_window:
+    latest_input = final_df.iloc[-input_window:
                                     ][feature_cols].values.flatten().reshape(1, -1)
 
     # Make forecast
     forecast = model.predict(latest_input)[0]
-    
-    # scale forcast values (if needed)
-    last_historic_price = df['close'].iloc[-1]
-    first_forecast_price = forecast[0]
-    scaling_factor = last_historic_price / first_forecast_price
-    
-    if scaling_factor == 0:
-        scaling_factor = 1
-    elif scaling_factor > 1:
-        if scaling_factor > 1.1:
-            forecast = forecast * scaling_factor
-    elif scaling_factor < 1:
-        if scaling_factor < 0.9:
-            forecast = forecast * scaling_factor
-            
-    print("scaling by a factor: ", scaling_factor)      
     
     # Create forecast dates
     last_date = df.index[-1]
