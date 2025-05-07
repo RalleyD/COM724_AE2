@@ -53,6 +53,8 @@ The preprocessing workflow consists of several key stages:
    - Relative Strength Index (RSI) to identify overbought/oversold conditions
    - Percentage price changes over various timeframes
 
+   Leveraging engineered features, particularly technical indicators and lag variables, for machine learning models aligns with findings from Pintelas et al. (2020) on the importance of feature engineering in cryptocurrency forecasting.
+
 3. **Sequence Creation**: Generating input-output pairs for model training, with 60-day input windows mapped to 30-day forecast horizons, creating a sliding window approach for multi-step forecasting.
 
 ### Clustering and Correlation
@@ -219,7 +221,7 @@ Single exponentia smoothing was selected for it's ability to perform regression 
 
 #### Random Forest
 
-Leverages ensebmle decision trees to model complex non-linear relationships. It is robust to outliers which handles extreme price movements (Breiman, 2001). However, Random Forest doesn't consider sequential dependencies, leading to a low R-squared score.
+Leverages ensemble decision trees to model complex non-linear relationships. It is robust to outliers which handles extreme price movements (Breiman, 2001). However, Random Forest doesn't consider sequential dependencies, leading to a low R-squared score.
 
 | Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
 |------------------------|--------|--------|-----------|-----------|--------|--------|-------|
@@ -246,6 +248,7 @@ Ultimately, leading to poor performance.
 
 #### Extreme Gradient Boosting
 
+XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who successfully applied similar boosting techniques to Bitcoin prediction.
 Implements gradient boosting with regularisation and tree-pruning (TOOD cite). This demonstrated the following advantages:
 
 1. Iteratively building trees from the residuals of the prior, helps to capture complex temporal patterns (Chen and Guestrin, 2016).
@@ -289,16 +292,20 @@ XGBoost emerged as the best-performing model due to its ability to capture non-l
 - Learning rate: 0.05 (enabling regularisation between training iterations)
 - Number of estimators: 200 (providing sufficient model complexity)
 
-Lagged features were extracted from the close prices which also yielded strong performance scores. This introduced a challenge that necessitated these exogenous variables in each single forecast over the forecast window. With respect the objective of achieving the highest accuracy, modelling the exogenous variables on highly voltatile data was impractical and introduced additional computational overhead.
+These parameters align with best practices established by Dutta et al. (2020), who identified similar optimal configurations for financial time series prediction.
 
-To facilitate and simplify multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This method was validated through extensive backtesting and yielded poorer performance scores than single-step forecasting:
+Derived features were extracted from the close prices which yielded strong performance scores. This introduced a challenge that necessitated these exogenous variables in unseen data. With respect the objective of achieving the highest accuracy, modelling the exogenous variables on highly voltatile data was impractical and introduced additional computational overhead.
+
+To facilitate and simplify multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This method was chosen over recursive forecasting due to the potential for superior performance identified in the findings of Lim and Zohren (2021).
+
+This method was validated through extensive backtesting and yielded poorer performance scores than single-step forecasting:
 
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|-------|-----|
-| Bitcoin (BTC)  | 15885.20 | 453152984.84 | 21287.39 | -0.71 |  
+| Bitcoin (BTC)  | 13740.86 | 384630252.17 | 19611.99 | -0.45 |  
 *Table - Multi-output XGBoost Regressor Scores*
 
-These scores are based on the inclusion of the recommended derived featues (short-term time lags, 7-day moving average, 30-day moving average). This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance (see Table 2).
+This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance.
 
 ### Model Evaluation Results
 
@@ -306,15 +313,15 @@ The model evaluation revealed significant performance variations across differen
 
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|---------|-------|   
-| Bitcoin (BTC)  | 14622.54 | 421942655.86 | 20541.24 | -0.59 |  
-| Ethereum (ETH) | 108.63     | 19445.99    | 139.45 | 0.93 |
-| Litecoin (LTC) | 3.72      | 32.88        | 5.73 | 0.93  |
-| Binance Coin (BNB) | 63.59 | 6536.66    | 80.85 | -0.84 |
+| Bitcoin (BTC)  |  13740.86 | 384630252.17 | 19611.99 | -0.45 |   
+| Ethereum (ETH) | 98.91     | 17331.24    | 131.65 | 0.94 |
+| Litecoin (LTC) | 3.30      | 27.25       | 5.22 |  0.94  |
+| Binance Coin (BNB) | 53.35 | 4863.66    | 69.74 | -0.37 |  
 *Table 2 - XGBoost Evaluation Across Multiple Cyptocurrencies*
 
 These results highlight several important observations:
 
-1. Litecoin and Ethereum showed the best predictive performance with an R² of 0.93, indicating that the model captured approximately 93% of the price variance.
+1. Litecoin and Ethereum showed the best predictive performance with an R² of 0.94, indicating that the model captured approximately 93% of the price variance. However, leading to overfitting.
 
 2. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than an ensemble learning method for these assets.
 
@@ -322,7 +329,7 @@ The short-term partial autocorrelation and performance scores highlight the impo
 
 Further experiments with feature combinations and model configurations revealed that:
 
-1. Using moving average, price change and RSI features consistently produced better results than short term lags.
+1. Using moving average, price change and 1-day lag, consistently produced better results for BNB and BTC compared to just using short term lags.
 
 2. The performance discrepancies across currencies correlate with their non-stationary properties, supporting the hypothesis that stationary assets are inherently more predictable.
 
@@ -479,25 +486,44 @@ In conclusion, the cryptocurrency forecasting dashboard represents a step toward
 
 ## References
 
-Corbet, S., Lucey, B., Urquhart, A. and Yarovaya, L. (2019) 'Cryptocurrencies as a financial asset: A systematic analysis', International Review of Financial Analysis, 62, pp. 182-199.
+Bariviera, A.F., Basgall, M.J., Hasperué, W. and Naiouf, M. (2017) 'Some stylized facts of the Bitcoin market', Physica A: Statistical Mechanics and its Applications, 484, pp. 82-90.
 
-Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li, L. (2022) 'Cryptocurrency trading: a comprehensive survey', Financial Innovation, 8(1), pp. 1-59.
+Box, G.E., Jenkins, G.M., Reinsel, G.C. and Ljung, G.M. (2015) Time Series Analysis: Forecasting and Control. 5th edn. Hoboken, NJ: John Wiley & Sons.
 
-Katsiampa, P., Corbet, S. and Lucey, B. (2023) 'High-frequency volatility co-movements in cryptocurrency markets', Journal of International Financial Markets, Institutions and Money, 74, article 101659.
-
-Levi, S. and Lipton, A. (2022) 'Bitcoin: Basics, Dominance, and Investment Aspects', in Financial Cryptography and Data Security, Springer, pp. 101-122.
-
-Kumar, D. and Rath, S.K. (2020) 'Predicting the Trend of Stock Market using Ensemble based Machine Learning Techniques', International Conference on Computational Intelligence in Data Science, pp. 1-6.
+Breiman, L. (2001) 'Random forests', Machine Learning, 45(1), pp. 5-32.
 
 Chen, S., Härdle, W.K., Hou, A.J. and Wang, W. (2022) 'Network quantile autoregression', Journal of Econometrics, 232(2), pp. 1356-1384.
 
+Chen, T. and Guestrin, C. (2016) 'XGBoost: A Scalable Tree Boosting System', Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 785-794.
+
+Corbet, S., Lucey, B., Urquhart, A. and Yarovaya, L. (2019) 'Cryptocurrencies as a financial asset: A systematic analysis', International Review of Financial Analysis, 62, pp. 182-199.
+
 Demirer, R., Gupta, R., Lv, Z. and Wong, W.K. (2019) 'Equity return dispersion and stock market volatility: Evidence from multivariate linear and nonlinear causality tests', Sustainability, 11(2), article 351.
+
+Dutta, A., Kumar, S. and Basu, M. (2020) 'A Gated Recurrent Unit Approach to Bitcoin Price Prediction', Journal of Risk and Financial Management, 13(2), article 23.
+
+Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li, L. (2022) 'Cryptocurrency trading: a comprehensive survey', Financial Innovation, 8(1), pp. 1-59.
+
+Ji, S., Kim, J. and Im, H. (2019) 'A comparative study of Bitcoin price prediction using deep learning', Mathematics, 7(10), article 898.
+
+Katsiampa, P., Corbet, S. and Lucey, B. (2023) 'High-frequency volatility co-movements in cryptocurrency markets', Journal of International Financial Markets, Institutions and Money, 74, article 101659.
+
+Kristjanpoller, W. and Minutolo, M.C. (2018) 'A hybrid volatility forecasting framework integrating GARCH, artificial neural network, technical analysis and principal components analysis', Expert Systems with Applications, 109, pp. 1-11.
+
+Kumar, D. and Rath, S.K. (2020) 'Predicting the Trend of Stock Market using Ensemble based Machine Learning Techniques', International Conference on Computational Intelligence in Data Science, pp. 1-6.
+
+Levi, S. and Lipton, A. (2022) 'Bitcoin: Basics, Dominance, and Investment Aspects', in Financial Cryptography and Data Security, Springer, pp. 101-122.
+
+Lim, B. and Zohren, S. (2021) 'Time-series forecasting with deep learning: a survey', Philosophical Transactions of the Royal Society A, 379(2194), article 20200209.
+
+McNally, S., Roche, J. and Caton, S. (2018) 'Predicting the Price of Bitcoin Using Machine Learning', 26th Euromicro International Conference on Parallel, Distributed and Network-based Processing, pp. 339-343.
+
+Pintelas, E., Livieris, I.E. and Pintelas, P. (2020) 'A grey-box ensemble model exploiting time series forecasting principles', Neural Computing and Applications, 32(15), pp. 11637-11659.
 
 Sezer, O.B., Gudelek, M.U. and Ozbayoglu, A.M. (2020) 'Financial time series forecasting with deep learning: A systematic literature review: 2005–2019', Applied Soft Computing, 90, article 106181.
 
-Chen, T. and Guestrin, C. (2016) 'XGBoost: A Scalable Tree Boosting System', Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 785-794.
-
 Sirignano, J. and Cont, R. (2019) 'Universal features of price formation in financial markets: perspectives from deep learning', Quantitative Finance, 19(9), pp. 1449-1459.
+Taylor, S.J. and Letham, B. (2018) 'Forecasting at scale', The American Statistician, 72(1), pp. 37-45.
 
 ----
 
