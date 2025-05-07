@@ -131,7 +131,22 @@ These non-normal distributions and lack of consistent patterns between coins tha
 ![](images/btc-pacf.png)  
 *Figure - Partial Autocorrelation - BTC*
 
-I.e. two to three time lags of statistical significance.
+I.e. two to three time lags of statistical significance. (TODO check this!)
+
+### Data Transformation
+
+Data transformation techniques were evaluated to determine whether the data could be normalised to aid statistical modeling. Transformation may help to stabilise the wide variance in the data, reducing the effect of extreme values while preserving the magnitude of the differences between observations.
+
+![](images/bnb-log-transform-diag.png)  
+*Figure Log Transformation Trend, Histogram, ACF, Q-Plot*
+
+![](images/bnb-sqrt-diag.png)  
+*Figure Square-root Transformation Trend, Histogram, ACF, Q-Plot*
+
+![](images/bnb-box-cox-diag.png)  
+*Figure Box-cox Transformation Trend, Histogram, ACF, Q-Plot*
+
+Neither log, square-root or box-cox transformation were able to approximate normality or trend. This encouraged the evaluation of bootsing models that train iteratively on residuals. Additionally due to the long term autocorrelation with no seasonailty, it may also be worth experimenting with models that give weight to short term observations.
 
 ### Feature Importance
 
@@ -239,6 +254,7 @@ Implements gradient boosting with regularisation and tree-pruning (TOOD cite). T
 
 PyCaret was utilised for efficient model optimisation. The optimisation process, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
 
+---
 ```Python
 from pycaret.regression import *
 
@@ -256,6 +272,8 @@ xgb_exp = RegressionExperiment().setup(
 xgb_model = xgb_exp.create_model('xgboost')
 ```
 *Figure 1 - XGBoost Experiment Code*
+
+----
 
 | Model                     | MAE       | MSE          | RMSE      | R²     | RMSLE  | MAPE   |
 |---------------------------|-----------|--------------|-----------|--------|--------|--------|
@@ -345,7 +363,7 @@ The user interface employs tab-based navigation to organise related visualisatio
 
 ### User Interface Features
 
-The dashboard provides several key user interface elements designed for intuitive interaction:
+The dashboard provides the following user interface elements:
 
 1. **Dashboard controls**:
    - Cryptocurrency selector with support for major coins (BTC, ETH, LTC, BNB).
