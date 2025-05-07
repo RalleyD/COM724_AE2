@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import joblib
 from xgboost import XGBRegressor
 from sklearn.multioutput import MultiOutputRegressor
+from sklearn.preprocessing import RobustScaler
 import time
 from datetime import datetime, timedelta
 import requests
@@ -22,11 +23,8 @@ warnings.filterwarnings('ignore')
 
 #### TODO ####
 # get_market_state should use percentage change from pandas
-# xgboost forecast continuity, use revised method from notebook
 # Check best practices for 7 and 30 day moving average plots
-# extend to all coins.
 # confidence interval (look this up)
-# add target profit parameter to buy recommendation - should not retrigger forecast
 
 # Set page configuration
 st.set_page_config(
@@ -285,13 +283,11 @@ def get_correlations(base_symbol, all_symbols=None):
 
 @st.cache_data
 def get_top_30() -> list:
-
-    coins = get_top_30_coins(10)
-
+    coins = get_top_30_coins(30)
+    
     cryptos: list = [coin[1] for coin in coins]
-    # binance kline format
     cryptos = list(map(lambda x: x.upper(), cryptos))
-
+    
     return cryptos
 
 
@@ -299,10 +295,7 @@ def add_features(df):
     """Add technical indicators and features to the dataframe"""
     # Create a copy of the dataframe
     data = df.copy()
-
-    # Add lagged features
-    for lag in [1]:
-        data[f'close_lag_{lag}'] = data['close'].shift(lag)
+    original_close = data['close'].copy()
 
     # Add rolling stats
     data['ma7'] = data['close'].rolling(window=7).mean()
@@ -320,6 +313,24 @@ def add_features(df):
     rs = gain / loss
     data['rsi'] = 100 - (100 / (1 + rs))
 
+    # ffill where possible
+    data = data.ffill()
+    # Drop rows with NaN values
+    data = data.dropna()
+    
+    # scale derived features
+    features = data.columns
+    scaler = RobustScaler()
+    valid_data = data[features]
+    scaler.fit(valid_data)
+    # apply to all derived features
+    data[features] = scaler.transform(data[features])
+
+    # restore original close values for target
+    data['original_close'] = original_close
+    
+    # ffill where possible
+    data = data.ffill()
     # Drop rows with NaN values
     data = data.dropna()
 
@@ -330,14 +341,16 @@ def add_features(df):
 def train_forecast_model(df, forecast_horizon=90, input_window=180):
     """Train an XGBoost model for multi-step forecasting"""
     # Prepare features
-    target_col = 'close'
     train_split = 0.8
     
     df_features = add_features(df)
+    target_col = 'original_close'
+    
+    print(df_features.head(3))
     
     experiment = RegressionExperiment().setup(
         data=df_features,
-        target='close',
+        target=target_col,
         data_split_shuffle=False,
         fold=5,
         fold_strategy='timeseries',
@@ -350,7 +363,6 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     )
     
     xgb = experiment.create_model("xgboost")
-    
     xgb_tuned = experiment.tune_model(xgb)
     
     final_df = experiment.dataset_transformed
@@ -373,12 +385,9 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
 
     X = np.array(X)
     y = np.array(y)
-    split_idx = int(len(X) * train_split)
-    _, X_test = X[:split_idx], X[split_idx:]
-    _, y_test = y[:split_idx], y[split_idx:]
 
     model = MultiOutputRegressor(xgb_tuned)
-    model.fit(X_test, y_test)
+    model.fit(X, y)
 
     # Get latest input window for forecasting
     latest_input = final_df.iloc[-input_window:
