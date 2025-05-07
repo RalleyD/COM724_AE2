@@ -283,7 +283,7 @@ def add_features(df):
     data = df.copy()
 
     # Add lagged features
-    for lag in [1, 3, 5]:
+    for lag in [1]:
         data[f'close_lag_{lag}'] = data['close'].shift(lag)
 
     # Add rolling stats
@@ -435,7 +435,7 @@ def calculate_kpis(df):
     }
 
 
-def calculate_buy_recommendation(forecast_df, target_profit):
+def calculate_buy_recommendation(forecast_df: pd.DataFrame, target_profit):
     """Calculate buy recommendation based on forecast"""
     prices = forecast_df['predicted'].values
     dates = forecast_df['date'].dt.strftime('%Y-%m-%d').values
@@ -444,6 +444,7 @@ def calculate_buy_recommendation(forecast_df, target_profit):
     best_buy_index = 0
     best_sell_index = 0
     best_roi = 0
+    target_met = False
 
     # Find best buy/sell combination
     for buy_idx in range(len(prices)):
@@ -467,11 +468,18 @@ def calculate_buy_recommendation(forecast_df, target_profit):
     sell_price = prices[best_sell_index]
     buy_confidence = confidence[best_buy_index]
 
+    # target profit met
+    profit_pct = forecast_df.loc[best_buy_index:best_sell_index, [
+        'predicted']].pct_change(periods=best_sell_index-best_buy_index).to_numpy()[-1] * 100
+    target_met = profit_pct >= target_profit
+
     return {
         'buy_date': buy_date,
         'buy_price': buy_price,
         'sell_price': sell_price,
-        'confidence': buy_confidence
+        'confidence': buy_confidence,
+        'target_met': target_met,
+        'profit_pct': float(profit_pct)
     }
 
 
@@ -708,7 +716,7 @@ def main():
         ))
 
         # Add forecast line
-        print(forecast.loc[forecast.index[:time_interval], 'date'].tail())
+        # print(forecast.loc[forecast.index[:time_interval], 'date'].tail())
         fig.add_trace(go.Scatter(
             x=forecast.loc[forecast.index[:time_interval], 'date'],
             y=forecast.loc[forecast.index[:time_interval], 'predicted'],
@@ -823,7 +831,15 @@ def main():
         st.markdown(
             f'<div class="correlation-item">'
             f'<span>Sell target:</span>'
-            f'<span style="font-weight: 600;">${buy_rec["sell_price"]:.2f}</span>'
+            f'<span style="font-weight: 600; color: {"#10B981" if buy_rec["target_met"] else "#EF4444"}">${buy_rec["sell_price"]:.2f}</span >'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f'<div class="correlation-item">'
+            f'<span>Profit:</span>'
+            f'<span style="font-weight: 600; color: {"#10B981" if buy_rec["target_met"] else "#EF4444"}">{buy_rec["profit_pct"]:.2f}%</span >'
             f'</div>',
             unsafe_allow_html=True
         )
