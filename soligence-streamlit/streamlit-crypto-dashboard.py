@@ -1,17 +1,22 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import requests
-from datetime import datetime, timedelta
-import time
-from sklearn.multioutput import MultiOutputRegressor
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
+import joblib
 from xgboost import XGBRegressor
-from sklearn.preprocessing import StandardScaler
+from sklearn.multioutput import MultiOutputRegressor
+import time
+from datetime import datetime, timedelta
+import requests
+import plotly.express as px
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import streamlit as st
+from backend.app.fetch_data_coingecko import get_top_30_coins
 import warnings
+
 warnings.filterwarnings('ignore')
 
 #### TODO ####
@@ -238,7 +243,7 @@ def generate_mock_news(coin="bitcoin"):
 
 @st.cache_data
 def get_correlations(base_symbol, all_symbols=None):
-    """Calculate correlations between cryptocurrencies"""
+    """TODO Calculate correlations between cryptocurrencies"""
     if all_symbols is None:
         all_symbols = ["BTC", "ETH", "SOL", "ADA", "XRP",
                        "DOT", "DOGE", "AVAX", "LINK", "MATIC"]
@@ -275,6 +280,18 @@ def get_correlations(base_symbol, all_symbols=None):
     return correlations
 
 # ----- Data Processing Functions -----
+
+
+@st.cache_data
+def get_top_30() -> list:
+
+    coins = get_top_30_coins(10)
+
+    cryptos: list = [coin[1] for coin in coins]
+    # binance kline format
+    cryptos = list(map(lambda x: x.upper(), cryptos))
+
+    return cryptos
 
 
 def add_features(df):
@@ -421,16 +438,12 @@ def calculate_kpis(df):
     daily_returns = recent_df['close'].pct_change().dropna()
     volatility = daily_returns.std()
 
-    # Calculate volume statistics
-    avg_volume_24h = recent_df['volume'].mean() / 1e9  # In billions
-
     # Estimate market cap (approximation: close price * average daily volume)
     market_cap = (recent_df['close'].iloc[-1] *
                   recent_df['volume'].mean()) / 1e9  # In billions
 
     return {
         'volatility': volatility,
-        'volume_24h': avg_volume_24h,
         'market_cap': market_cap,
     }
 
@@ -519,7 +532,10 @@ def calculate_investment_profit(df, investment=1000, days_ago=7):
     else:
         return investment
 
-# ----- UI Components -----
+
+def load_base_model(coin: str):
+    """load pre-trained model"""
+    pass
 
 
 def main():
@@ -528,14 +544,18 @@ def main():
                 unsafe_allow_html=True)
     st.markdown('Real-time analysis and predictions for cryptocurrency markets')
 
+    with st.spinner('Getting top 30 market cap coins...'):
+        top_market_cap = get_top_30()
+    
     # Sidebar for controls
     with st.sidebar:
         st.header('Dashboard Controls')
 
+
         # Cryptocurrency selection
         selected_coin = st.selectbox(
             'Select Cryptocurrency',
-            options=['BTC', 'ETH', 'SOL', 'ADA', 'XRP'],
+            options=[coin.rstrip("USDT") for coin in top_market_cap],
             index=0
         )
 
@@ -568,11 +588,7 @@ def main():
 
         # Get data for additional coins for market analysis
         all_coins_data = {
-            'BTC': get_crypto_data('BTC', limit=90),
-            'ETH': get_crypto_data('ETH', limit=90),
-            'SOL': get_crypto_data('SOL', limit=90),
-            'ADA': get_crypto_data('ADA', limit=90),
-            'XRP': get_crypto_data('XRP', limit=90)
+            coin.rstrip("USDT"): get_crypto_data(coin.rstrip("USDT"), limit=90) for coin in top_market_cap
         }
 
     # Filter data based on selected time interval
@@ -616,7 +632,7 @@ def main():
         st.markdown(
             f'<div class="metric-value">{kpis["volatility"]*100:.1f}%</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div>24h Volume: ${kpis["volume_24h"]:.1f}B</div>', unsafe_allow_html=True)
+            f'<div>24h Volume: ${kpis["market_cap"]:.1f}B</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Get market state
@@ -928,7 +944,7 @@ def main():
                 '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
             st.metric(
                 label="Market Cap",
-                value=f"${kpis['market_cap']:.1f}B"
+                value=f"{kpis['volatility']*100:.1f}%"
             )
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -937,7 +953,7 @@ def main():
                 '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
             st.metric(
                 label="24h Volume",
-                value=f"${kpis['volume_24h']:.1f}B"
+                value=f"${kpis['market_cap']:.1f}B"
             )
             st.markdown('</div>', unsafe_allow_html=True)
             # st.markdown(
