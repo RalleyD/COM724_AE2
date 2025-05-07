@@ -329,10 +329,11 @@ def add_features(df):
 def train_forecast_model(df, forecast_horizon=90, input_window=180):
     """Train an XGBoost model for multi-step forecasting"""
     # Prepare features
+    target_col = 'close'
+    
     df_features = add_features(df)
 
     # Define target and feature columns
-    target_col = 'close'
     feature_cols = [col for col in df_features.columns if col != target_col]
 
     # Prepare X (input) and y (target) data for training
@@ -370,7 +371,23 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
 
     # Make forecast
     forecast = model.predict(latest_input)[0]
-
+    
+    # scale forcast values (if needed)
+    last_historic_price = df['close'].iloc[-1]
+    first_forecast_price = forecast[0]
+    scaling_factor = last_historic_price / first_forecast_price
+    
+    if scaling_factor == 0:
+        scaling_factor = 1
+    elif scaling_factor > 1:
+        if scaling_factor > 1.1:
+            forecast = forecast * scaling_factor
+    elif scaling_factor < 1:
+        if scaling_factor < 0.9:
+            forecast = forecast * scaling_factor
+            
+    print("scaling by a factor: ", scaling_factor)      
+    
     # Create forecast dates
     last_date = df.index[-1]
     forecast_dates = pd.date_range(
