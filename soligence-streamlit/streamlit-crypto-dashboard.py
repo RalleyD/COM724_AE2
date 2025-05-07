@@ -331,6 +331,7 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     """Train an XGBoost model for multi-step forecasting"""
     # Prepare features
     target_col = 'close'
+    train_split = 0.8
     
     df_features = add_features(df)
     
@@ -341,7 +342,7 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
         fold=5,
         fold_strategy='timeseries',
         session_id=456,
-        train_size=0.8,
+        train_size=train_split,
         remove_multicollinearity=True,
         feature_selection=True,
         feature_selection_estimator='rf',
@@ -372,19 +373,12 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
 
     X = np.array(X)
     y = np.array(y)
-
-    # Train model
-    # base_model = XGBRegressor(
-    #     n_estimators=180,
-    #     learning_rate=0.05,
-    #     max_depth=4,
-    #     subsample=0.8,
-    #     colsample_bytree=0.9,
-    #     random_state=42
-    # )
+    split_idx = int(len(X) * train_split)
+    _, X_test = X[:split_idx], X[split_idx:]
+    _, y_test = y[:split_idx], y[split_idx:]
 
     model = MultiOutputRegressor(xgb_tuned)
-    model.fit(X, y)
+    model.fit(X_test, y_test)
 
     # Get latest input window for forecasting
     latest_input = final_df.iloc[-input_window:
@@ -392,6 +386,24 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
 
     # Make forecast
     forecast = model.predict(latest_input)[0]
+    
+    # scale forcast values (if needed)
+    last_historic_price = df['close'].iloc[-1]
+    first_forecast_price = forecast[0]
+    scaling_factor = last_historic_price / first_forecast_price
+    scale = False
+    if scaling_factor == 0:
+        scaling_factor = 1
+    elif scaling_factor > 1:
+        if scaling_factor > 1.1:
+            scale = True
+    elif scaling_factor < 1:
+        if scaling_factor < 0.9:
+            scale = True
+
+    if scale:
+        print("scaling by a factor: ", scaling_factor)
+        forecast = forecast * scaling_factor      
     
     # Create forecast dates
     last_date = df.index[-1]
