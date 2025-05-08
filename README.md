@@ -1,48 +1,64 @@
-# COM724_AE2
- Crypto insights and forecaster
+# SOL-igence - COM724_AE2
 
+Crypto insights and forecaster
 
-# Project setup and configuration
+## Installation
 
-Dependencies installed with yarn
+1. install the necessary requirements from requirements.txt
+   1. For example, create a new conda environment with the requirements (which can be found at the root of the repo):
+      1. ``` conda create --name my_env --file  requirements.txt ```
+      2. ``` conda activate my_env ```
 
-```
-npm create vite@latest crypto-forecaster -- --template react-ts
-cd crypto-forecaster
-yarn install
-```
+## Running The Project
+1. run the streamlit app. From the root of the project directory:
+   1. ``` streamlit run soligence-streamlit/streamlit-crypto-dashboard.py ```
 
-```
- yarn add recharts @types/recharts lucide-react 
-```
+## Data Preprocessing And Analysis
 
-material UI for the Cards
-```
-yarn add @mui/material @emotion/react @emotion/styled
-```
+[see data quality notebook](notebooks/data_quality.ipynb)
 
-for xgboost with PyCaret:
+[see data cleansing notebook](notebooks/data_cleansing.ipynb)
 
-downgrade scipy
+### Exploratory Data Analysis
 
-``` pip install scipy==1.10.1 --force-reinstall ```
+[see EDA notebook](notebooks/eda.ipynb)
 
-``` conda install xgboost ```
+[Feature importance](notebooks/feature_importance.ipynb)
 
-for Prophet with PyCaret:
+### Time Series Decomposition
 
-``` pip install matplotlib==3.7.1 --force-reinstall ```
+[see TS notebook](notebooks/time-series.ipynb)
 
-``` pip install numpy==1.24 --force-reinstall ```
+## Modelling
+
+### Clustering
+
+[see EDA notebook](notebooks/eda.ipynb)
+
+### Time series evaluation
+
+[ARIMA](notebooks/arima-prototyping.ipynb)
+
+[prophet](notebooks/prophet-prototyping.ipynb)
+
+[Exponential smoothing](notebooks/single-exponential-smoothing.ipynb)
+
+[Random forest](notebooks/single-exponential-smoothing.ipynb)
+
+### Forecasting
+
+[XGBoost](notebooks/xgboost-time-series.ipynb)
+
+## Pre-trained models
+
+- Sci-kit learn MultiOutputRegressor objects built on top of XGBoostRegressor objects.
+- Sci-kit learn RobustScaler objects
+- Trained-feature column lists.
 
 ## oustanding work
+- real confidence intervals for forecasting.
+- reactJS app.
 
-Integrate with Real-Time Data: Modify the code to pull real-time data from a cryptocurrency API
+## Bugs
 
-Check best practices for 7 and 30 day moving average plots
-
-Feature importance for extracted features
-
-outline the location of the analysis work from the notebooks, with links to each
-
-installation and running instructions for the project.
+- The confidence interval may need to be deselected to view the value on the interactive line plot, in forecast mode.
