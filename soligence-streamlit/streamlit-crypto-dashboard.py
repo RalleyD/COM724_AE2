@@ -239,40 +239,51 @@ def generate_mock_news(coin="bitcoin"):
 
 
 @st.cache_data
-def get_correlations(base_symbol, all_symbols=None):
-    """TODO Calculate correlations between cryptocurrencies"""
-    if all_symbols is None:
-        all_symbols = ["BTC", "ETH", "SOL", "ADA", "XRP",
-                       "DOT", "DOGE", "AVAX", "LINK", "MATIC"]
+def get_correlations(base_symbol, all_symbol_data=None):
+    """Calculate correlations between cryptocurrencies"""
+    if all_symbol_data is None:
+        return None
+    
+    all_data = all_symbol_data.copy()
 
     # Remove base symbol from the list if it's there
-    if base_symbol in all_symbols:
-        all_symbols.remove(base_symbol)
+    # if base_symbol in all_data.keys():
+    #     del all_data[base_symbol]
+    
+    all_coin_df = pd.DataFrame()
+    for symbol, data_df in all_data.items():
+        if len(data_df) == 0:
+            continue
+        close_series = data_df['close'].copy()
+        close_series.name = symbol
+        # print(close_series[0:2])
+        if all_coin_df.empty:
+            all_coin_df = pd.DataFrame(close_series)
+        else:
+            # inner should keep only matching timestamps
+            tmp = all_coin_df.join(close_series, how='inner')
+            # a coin may have a completely mis-matched index, so remove it from the analysis
+            if not tmp.empty:
+                all_coin_df = tmp
+    
+    corr_matrix = all_coin_df.corr()
 
-    # Generate mock correlations
-    np.random.seed(42)  # For reproducibility
+    # Generate correlations
     correlations = []
 
-    for symbol in all_symbols:
-        # Generate a correlation value between -0.8 and 0.95
-        if symbol in ["ETH", "SOL", "BNB"]:  # Usually positively correlated with BTC
-            corr = np.random.uniform(0.6, 0.95)
-            trend = "positive"
-        elif symbol in ["XRP", "DOGE", "SHIB"]:  # Can be negatively correlated
-            corr = np.random.uniform(-0.8, -0.2)
-            trend = "negative"
-        else:
-            corr = np.random.uniform(-0.5, 0.8)
-            trend = "positive" if corr > 0 else "negative"
-
+    for symbol, corr in corr_matrix[base_symbol].drop(base_symbol).nlargest(4).items():
         correlations.append({
-            "name": symbol,
+            "name": symbol.rstrip("USDT"),
             "value": corr,
-            "trend": trend
+            "trend": "positive" if corr > 0 else "negative"
         })
-
-    # Sort by absolute correlation value
-    correlations.sort(key=lambda x: abs(x["value"]), reverse=True)
+        
+    for symbol, corr in corr_matrix[base_symbol].drop(base_symbol).nsmallest(4).items():
+        correlations.append({
+            "name": symbol.rstrip("USDT"),
+            "value": corr,
+            "trend": "positive" if corr > 0 else "negative"
+        })
 
     return correlations
 
@@ -907,13 +918,13 @@ def main():
             '<div class="sub-header">Correlation Analysis</div>', unsafe_allow_html=True)
 
         # Get correlations
-        correlations = get_correlations(selected_coin)
+        correlations = get_correlations(selected_coin, all_coins_data)
 
         # Split into positive and negative correlations
         positive_corr = [
-            c for c in correlations if c['trend'] == 'positive'][:4]
+            c for c in correlations if c['trend'] == 'positive']
         negative_corr = [
-            c for c in correlations if c['trend'] == 'negative'][:4]
+            c for c in correlations if c['trend'] == 'negative']
 
         # Create two columns for positive and negative correlations
         pos_col, neg_col = st.columns(2)
