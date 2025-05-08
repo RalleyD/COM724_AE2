@@ -503,12 +503,17 @@ def calculate_moving_averages(df, windows=[7, 30]):
     # create buy and sell signals i.e x-axis points
     ma_buy_sell_df = ma_data.copy()
     ma_buy_sell_df.dropna(inplace=True)
-    ma_data_iter = ma_buy_sell_df.itertuples()
-    current_short = next(ma_data_iter)
-    current_short_ma = current_short.ma7
-    current_short_id = current_short.Index
     buy_signals = []
     sell_signals = []
+    try:
+        ma_data_iter = ma_buy_sell_df.itertuples()
+        current_short = next(ma_data_iter)
+    except StopIteration:
+        # Handle the case where the iterator is empty
+        return ma_data, buy_signals, sell_signals
+
+    current_short_ma = current_short.ma7
+    current_short_id = current_short.Index
     crossed_above = False
     crossed_below = False
         
