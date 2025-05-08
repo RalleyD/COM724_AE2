@@ -1010,7 +1010,7 @@ def main():
                 '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
             st.metric(
                 label="Market Cap",
-                value=f"{kpis['volatility']*100:.1f}%"
+                value=f"${kpis['market_cap']:.1f}B"
             )
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1018,8 +1018,8 @@ def main():
             st.markdown(
                 '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
             st.metric(
-                label="24h Volume",
-                value=f"${kpis['market_cap']:.1f}B"
+                label="30-Day Volatility",
+                value=f"{kpis['volatility']*100:.1f}%"
             )
             st.markdown('</div>', unsafe_allow_html=True)
             # st.markdown(
