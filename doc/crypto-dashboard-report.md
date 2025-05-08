@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The cryptocurrency market has experienced significant growth and volatility since its inception, creating both opportunities and challenges for investors, traders, and researchers (Corbet et al., 2019). With over 10,000 cryptocurrencies in existence and a market capitalization exceeding $1 trillion, making informed investment decisions requires sophisticated analytical tools capable of processing vast amounts of data and identifying meaningful patterns (Levi and Lipton, 2022). Traditional financial analysis methods often fall short when applied to cryptocurrencies due to their unique characteristics, including extreme volatility, 24/7 trading, and sensitivity to technological, regulatory, and market sentiment factors (Fang et al., 2022).
+The cryptocurrency market has experienced significant growth and volatility since its inception, creating both opportunities and challenges for investors, traders, and researchers (Corbet et al., 2019). With over 10,000 cryptocurrencies in existence and a market capitalization exceeding $1 trillion, making informed investment decisions requires sophisticated analytical tools capable of processing vast amounts of data and identifying meaningful patterns (TODO replace Levi and Lipton, 2022). Traditional financial analysis methods often fall short when applied to cryptocurrencies due to their unique characteristics, including extreme volatility, 24/7 trading, and sensitivity to technological, regulatory, and market sentiment factors (Fang et al., 2022).
 
 This report documents the development of a cryptocurrency forecasting dashboard designed to address these challenges. The dashboard leverages machine learning techniques, real-time data integration, and interactive visualizations to provide actionable insights for cryptocurrency market participants. Expanding on conventional financial dashboards, this solution incorporates advanced time-series forecasting capabilities specifically optimised for cryptocurrency price prediction, correlation analysis, and investment decision support.
 
@@ -40,7 +40,7 @@ To address these challenges, the project established the following key objective
 
 ### Data Collection and Preprocessing
 
-The data pipeline begins with collection from the Binance API, chosen for its reliability, comprehensive coverage of major cryptocurrencies, and granular historical data access (Katsiampa et al., 2023). To ensure system robustness, a fallback mechanism using cached CSV data was implemented for situations where API connectivity is compromised.
+The data pipeline begins with collection from the Binance API, chosen for its reliability, comprehensive coverage of major cryptocurrencies, and granular historical data access.
 
 The preprocessing workflow consists of several key stages:
 
@@ -53,7 +53,7 @@ The preprocessing workflow consists of several key stages:
    - Relative Strength Index (RSI) to identify overbought/oversold conditions
    - Percentage price changes over various timeframes
 
-   Leveraging engineered features, particularly technical indicators and lag variables, for machine learning models aligns with findings from Pintelas et al. (2020) on the importance of feature engineering in cryptocurrency forecasting.
+   Leveraging engineered features, particularly technical indicators and lag variables, for machine learning models aligns with findings from Pintelas et al. (2020) on the importance of feature engineering.
 
 3. **Sequence Creation**: Generating input-output pairs for model training, with 60-day input windows mapped to 30-day forecast horizons, creating a sliding window approach for multi-step forecasting.
 
@@ -183,7 +183,7 @@ ARIMA models have been widely used in financial forecasting (Box et al., 2015) t
 
 ![Figure: Arima Prediction Line Plot](images/arima-eval.png)  
 
-Due to its popularity, it was selected for evaluation as a means to compare against other methods.
+The poorer performance aligns with the observations from McNally et al. (2017). Due to its popularity, it was selected for evaluation as a means to compare against other methods.
 
 #### Exponential Smoothing
 
@@ -557,7 +557,7 @@ Based on the identified limitations and challenges, several future enhancements 
 
 3. **Model Improvements**:
    - Develop a cryptocurrency-specific model architecture which captures the inter-cluster differences between representative coins.
-   - Investigate deep learning approaches i.e LSTM, that may better capture long-range dependencies in price data.
+   - Investigate deep learning approaches i.e LSTM, that may better capture long-range dependencies in price data (Sezer, Gudelek and Ozbayoglu 2020).
    - Implement ensemble methods that combine multiple model types or configurations to increase robustness.
 
 4. **Enhanced features**:
@@ -597,13 +597,9 @@ Box, G.E., Jenkins, G.M., Reinsel, G.C. and Ljung, G.M. (2015) Time Series Analy
 
 Breiman, L. (2001) 'Random forests', Machine Learning, 45(1), pp. 5-32.
 
-Chen, S., Härdle, W.K., Hou, A.J. and Wang, W. (2022) 'Network quantile autoregression', Journal of Econometrics, 232(2), pp. 1356-1384.
-
 Chen, T. and Guestrin, C. (2016) 'XGBoost: A Scalable Tree Boosting System', Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 785-794.
 
 Corbet, S., Lucey, B., Urquhart, A. and Yarovaya, L. (2019) 'Cryptocurrencies as a financial asset: A systematic analysis', International Review of Financial Analysis, 62, pp. 182-199.
-
-Demirer, R., Gupta, R., Lv, Z. and Wong, W.K. (2019) 'Equity return dispersion and stock market volatility: Evidence from multivariate linear and nonlinear causality tests', Sustainability, 11(2), article 351.
 
 Dutta, A., Kumar, S. and Basu, M. (2020) 'A Gated Recurrent Unit Approach to Bitcoin Price Prediction', Journal of Risk and Financial Management, 13(2), article 23.
 
@@ -611,24 +607,15 @@ Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li,
 
 Ji, S., Kim, J. and Im, H. (2019) 'A comparative study of Bitcoin price prediction using deep learning', Mathematics, 7(10), article 898.
 
-Katsiampa, P., Corbet, S. and Lucey, B. (2023) 'High-frequency volatility co-movements in cryptocurrency markets', Journal of International Financial Markets, Institutions and Money, 74, article 101659.
-
 Kristjanpoller, W. and Minutolo, M.C. (2018) 'A hybrid volatility forecasting framework integrating GARCH, artificial neural network, technical analysis and principal components analysis', Expert Systems with Applications, 109, pp. 1-11.
-
-Kumar, D. and Rath, S.K. (2020) 'Predicting the Trend of Stock Market using Ensemble based Machine Learning Techniques', International Conference on Computational Intelligence in Data Science, pp. 1-6.
-
-Levi, S. and Lipton, A. (2022) 'Bitcoin: Basics, Dominance, and Investment Aspects', in Financial Cryptography and Data Security, Springer, pp. 101-122.
 
 Lim, B. and Zohren, S. (2021) 'Time-series forecasting with deep learning: a survey', Philosophical Transactions of the Royal Society A, 379(2194), article 20200209.
 
 McNally, S., Roche, J. and Caton, S. (2018) 'Predicting the Price of Bitcoin Using Machine Learning', 26th Euromicro International Conference on Parallel, Distributed and Network-based Processing, pp. 339-343.
 
-Pintelas, E., Livieris, I.E. and Pintelas, P. (2020) 'A grey-box ensemble model exploiting time series forecasting principles', Neural Computing and Applications, 32(15), pp. 11637-11659.
+PINTELAS, E., I.E. LIVIERIS and P. PINTELAS, 2020. A Grey-Box Ensemble Model Exploiting Black-Box Accuracy and White-Box Intrinsic Interpretability. Algorithms, 13(1), 17
 
 Sezer, O.B., Gudelek, M.U. and Ozbayoglu, A.M. (2020) 'Financial time series forecasting with deep learning: A systematic literature review: 2005–2019', Applied Soft Computing, 90, article 106181.
-
-Sirignano, J. and Cont, R. (2019) 'Universal features of price formation in financial markets: perspectives from deep learning', Quantitative Finance, 19(9), pp. 1449-1459.
-Taylor, S.J. and Letham, B. (2018) 'Forecasting at scale', The American Statistician, 72(1), pp. 37-45.
 
 ----
 
