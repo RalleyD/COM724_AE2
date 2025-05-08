@@ -1,5 +1,6 @@
 import sys
 import os
+# to enable importing backend modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 import joblib
@@ -122,61 +123,8 @@ def get_crypto_data(symbol="BTC", interval="1d", limit=1000):
         return df[['open', 'high', 'low', 'close', 'volume']]
     except Exception as e:
         st.error(f"Error fetching data from Binance: {e}")
-        # Return mock data if API fails
-        return generate_mock_data(symbol, limit)
 
 
-@st.cache_data
-def generate_mock_data(symbol, days=365):
-    """
-    TODO remove
-    Generate mock data if API is not available"""
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-
-    # Set different base prices for different coins
-    if symbol == "BTC":
-        base_price = 30000
-        volatility = 0.03
-    elif symbol == "ETH":
-        base_price = 2000
-        volatility = 0.04
-    elif symbol == "SOL":
-        base_price = 100
-        volatility = 0.05
-    elif symbol == "ADA":
-        base_price = 0.5
-        volatility = 0.06
-    else:
-        base_price = 1.0
-        volatility = 0.04
-
-    price = base_price
-    prices = []
-
-    for i in range(len(date_range)):
-        # Random price movement with some trend
-        change = np.random.normal(0, volatility)
-        # Add some cycles
-        if i % 7 == 0:  # Weekly pattern
-            change += 0.01
-        if i % 30 == 0:  # Monthly pattern
-            change -= 0.02
-
-        price = price * (1 + change)
-        prices.append(price)
-
-    # Create dataframe
-    df = pd.DataFrame({
-        'open': prices,
-        'high': [p * (1 + abs(np.random.normal(0, 0.01))) for p in prices],
-        'low': [p * (1 - abs(np.random.normal(0, 0.01))) for p in prices],
-        'close': prices,
-        'volume': [abs(np.random.normal(base_price * 1000000, base_price * 500000)) for _ in prices]
-    }, index=date_range)
-
-    return df
 
 
 @st.cache_data(ttl=3600)
@@ -203,39 +151,6 @@ def get_crypto_news(coin="bitcoin"):
         return news_items
     except Exception as e:
         st.error(f"Error fetching news: {e}")
-        # Return mock news if API fails
-        return generate_mock_news(coin)
-
-
-@st.cache_data
-def generate_mock_news(coin="bitcoin"):
-    """
-    TODO remove
-    Generate mock news if API is not available"""
-    news_titles = [
-        f"{coin.upper()} Surges Past Key Resistance Levels",
-        f"Major Bank Announces {coin.capitalize()} Integration",
-        f"New Regulatory Framework for {coin.capitalize()} Announced",
-        f"{coin.upper()} Mining Difficulty Reaches All-Time High",
-        f"Institutional Investors Add {coin.capitalize()} to Portfolios",
-        f"Technical Analysis: {coin.capitalize()} Bull Run Imminent"
-    ]
-
-    sources = ["CryptoNews", "CoinDesk", "Bloomberg",
-               "Financial Times", "Reuters", "CNBC"]
-
-    news_items = []
-    for i in range(6):
-        days_ago = np.random.randint(0, 5)
-        news_items.append({
-            'title': news_titles[i],
-            'url': "#",
-            'source': sources[i],
-            'published_at': datetime.now() - timedelta(days=days_ago),
-            'body': f"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisi vel consectetur euismod, nisi vel consectetur..."
-        })
-
-    return news_items
 
 
 @st.cache_data
