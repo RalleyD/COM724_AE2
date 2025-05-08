@@ -624,7 +624,7 @@ def calculate_moving_averages(df, windows=[7, 30]):
     print(buy_signals)
     print("sell signals")
     print(sell_signals)            
-    return ma_data
+    return ma_data, buy_signals, sell_signals
 
 
 def calculate_profit_scenarios(df, amount=1, days_ago=30):
@@ -796,7 +796,7 @@ def main():
 
     with tab2:
         # Calculate moving averages
-        ma_data = calculate_moving_averages(filtered_data)
+        ma_data, buy_signals, sell_signals = calculate_moving_averages(filtered_data)
 
         # Moving averages chart
         fig = go.Figure()
@@ -827,6 +827,23 @@ def main():
             name='30-Day MA',
             line=dict(color='#F59E0B', width=2)
         ))
+        
+        for buy in buy_signals:
+            # Add vertical dotted green line for buy signals
+            fig.add_vline(x=buy,
+                          line_width=2,
+                          line_dash='dash',
+                          line_color="green",
+                          name="Buy Signal",
+                          showlegend=True)
+            # Add vertical dotted red line for sell signals
+        for sell in sell_signals:
+            fig.add_vline(x=sell,
+                          line_width=2,
+                          line_dash='dash',
+                          line_color="red",
+                          name="Sell Signal",
+                          showlegend=True)
 
         fig.update_layout(
             title=f'{selected_coin} Moving Averages',
