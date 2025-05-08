@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The cryptocurrency market has experienced significant growth and volatility since its inception, creating both opportunities and challenges for investors, traders, and researchers (Corbet et al., 2019). With over 10,000 cryptocurrencies in existence and a market capitalization exceeding $1 trillion, making informed investment decisions requires sophisticated analytical tools capable of processing vast amounts of data and identifying meaningful patterns (TODO replace Levi and Lipton, 2022). Traditional financial analysis methods often fall short when applied to cryptocurrencies due to their unique characteristics, including extreme volatility, 24/7 trading, and sensitivity to technological, regulatory, and market sentiment factors (Fang et al., 2022).
+The cryptocurrency market has experienced significant growth and volatility since its inception, creating both opportunities and challenges for investors, traders, and researchers (Corbet et al., 2019). The cryptocurrency market has 15.1 million different crypto assets; a 3.16 trillion USD market capitalisation, with Bitcoin holding 63.8 % of the current market capitalisation (CoinMarketCap 2025). Making informed investment decisions requires sophisticated analytical tools capable of processing vast amounts of data and identifying meaningful patterns (Sezer et al., 2020). Traditional financial analysis methods often fall short when applied to cryptocurrencies due to their unique characteristics, including extreme volatility, 24/7 trading, and sensitivity to technological, regulatory, and market sentiment factors (Fang et al., 2022).
 
 This report documents the development of a cryptocurrency forecasting dashboard designed to address these challenges. The dashboard leverages machine learning techniques, real-time data integration, and interactive visualizations to provide actionable insights for cryptocurrency market participants. Expanding on conventional financial dashboards, this solution incorporates advanced time-series forecasting capabilities specifically optimised for cryptocurrency price prediction, correlation analysis, and investment decision support.
 
@@ -59,7 +59,7 @@ The preprocessing workflow consists of several key stages:
 
 ### Clustering and Correlation
 
-K-means clustering was used to determine relationships between cryptocurrencies. K-means clustering was chosen for its efficiency in identifying logical groupings of data (TODO CITE).
+K-means clustering was used to determine relationships between cryptocurrencies. K-means clustering was chosen for its efficiency in identifying logical groupings of data (Das, Kayal and Maiti 2023).
 
 Using a dataset containing last year's close prices of the top 30 market cap coins, the dataset was transformed from long to wide format i.e each day's close price as columns and a single row for each coin. Providing each coin as an observation for clustering with a rich set of features. To aid clustering performance, the dimensionality of the data was reduced to its optimal principal components (2).
 
@@ -126,7 +126,7 @@ These non-normal distributions and lack of consistent patterns between coins tha
 
 ![Figure: Partial Autocorrelation - BTC](images/btc-pacf.png)  
 
-I.e. two to three time lags of statistical significance. (TODO check this!)
+I.e. two to three time lags of statistical significance.
 
 ### Data Transformation
 
@@ -187,7 +187,7 @@ The poorer performance aligns with the observations from McNally et al. (2017). 
 
 #### Exponential Smoothing
 
-Single exponentia smoothing was selected for it's ability to perform regression on univariate data with decreasing weights for older observations (TODO cite). Despite this model's ability to adapt to changing trends, it exhibited similar limitations:
+Single exponential smoothing was selected for it's ability to perform regression on univariate data with decreasing weights for older observations (Brownlee 2020). Despite this model's ability to adapt to changing trends, it exhibited similar limitations:
 
 1. The long term autocorrelation in the close prices may have caused poor performance (Kristjanpoller and Minutolo, 2018).
 2. Lacking complexity required to model short term volatility.
@@ -235,7 +235,7 @@ Ultimately, leading to poor performance.
 
 #### Extreme Gradient Boosting
 
-XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who applied similar boosting techniques to Bitcoin prediction. XGBoost has the potential advantages:
+XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who applied similar boosting techniques to Bitcoin prediction. K, Ludvigsen (2022) reports, "XGBoost can outperform neural networks on a number of time series forecasting tasks". XGBoost has the potential advantages:
 
 1. Iteratively building trees from the residuals of the prior, helps to capture complex temporal patterns (Chen and Guestrin, 2016).
 2. Prevents overfitting to historical patterns e.g internally pruning trees in each iteration.
@@ -351,7 +351,7 @@ This method was validated through extensive backtesting and yielded poorer perfo
 | Bitcoin (BTC)  | 13010.52 | 338653216.00 | 18402.53 | -0.30 |  
 *Table: Multi-output XGBoost Regressor Bitcoin Scores*
 
-This is due to the degradation in prediction accuracy over wider forecast windows (TODO cite). In addition, the scores were calculated on unseen data (approximately 1 year), where bitcoin exhibiting a substantial and sudden increase in value. Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and lower ranked features improved performance.
+This may be due to the degradation in prediction accuracy over a wider forecast window (90 days). In addition, the scores were calculated on unseen data (approximately 1 year), where bitcoin exhibiting a substantial and sudden increase in value. Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and lower ranked features improved performance.
 
 ### Model Evaluation Results
 
@@ -597,13 +597,21 @@ Box, G.E., Jenkins, G.M., Reinsel, G.C. and Ljung, G.M. (2015) Time Series Analy
 
 Breiman, L. (2001) 'Random forests', Machine Learning, 45(1), pp. 5-32.
 
+BROWNLEE, J., 2020. A Gentle Introduction to Exponential Smoothing for Time Series Forecasting in Python [viewed April 28 2025]. Available from: https://machinelearningmastery.com/exponential-smoothing-for-time-series-forecasting-in-python/
+
 Chen, T. and Guestrin, C. (2016) 'XGBoost: A Scalable Tree Boosting System', Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 785-794.
 
+COINMARKETCAP, 2025. Crypto Market Overview [viewed May, 8 2025]. Available from: https://coinmarketcap.com/charts/
+
 Corbet, S., Lucey, B., Urquhart, A. and Yarovaya, L. (2019) 'Cryptocurrencies as a financial asset: A systematic analysis', International Review of Financial Analysis, 62, pp. 182-199.
+
+DAS, D., P. KAYAL and M. MAITI, 2023. A K-means clustering model for analyzing the Bitcoin extreme value returns. Decision analytics journal, 6, 100152
 
 Dutta, A., Kumar, S. and Basu, M. (2020) 'A Gated Recurrent Unit Approach to Bitcoin Price Prediction', Journal of Risk and Financial Management, 13(2), article 23.
 
 Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li, L. (2022) 'Cryptocurrency trading: a comprehensive survey', Financial Innovation, 8(1), pp. 1-59.
+
+GROES ALBIN LUDVIGSEN, K., 2022. Multi-step time series forecasting with XGBoost [viewed April 28 2025]. Available from: https://towardsdatascience.com/multi-step-time-series-forecasting-with-xgboost-65d6820bec39/
 
 Ji, S., Kim, J. and Im, H. (2019) 'A comparative study of Bitcoin price prediction using deep learning', Mathematics, 7(10), article 898.
 
