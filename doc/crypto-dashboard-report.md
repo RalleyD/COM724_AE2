@@ -44,7 +44,7 @@ The data pipeline begins with collection from the Binance API, chosen for its re
 
 The preprocessing workflow consists of several key stages:
 
-1. **Data Cleaning**: Handling missing values, removing outliers, reducing multi-level indexes and ensuring consistent datetime formatting across all datasets.
+1. **Data Cleaning**: Handling missing values, reducing multi-level indexes, scaling and ensuring consistent datetime formatting across all datasets.
 
 2. **Feature Engineering**: Creating technical indicators and derived features that capture market dynamics:
    - Lagged features (1, 3, 5-day) to capture short-term momentum
@@ -235,11 +235,10 @@ Ultimately, leading to poor performance.
 
 #### Extreme Gradient Boosting
 
-XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who successfully applied similar boosting techniques to Bitcoin prediction.
-Implements gradient boosting with regularisation and tree-pruning (TOOD cite). This demonstrated the following advantages:
+XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who applied similar boosting techniques to Bitcoin prediction. XGBoost has the potential advantages:
 
 1. Iteratively building trees from the residuals of the prior, helps to capture complex temporal patterns (Chen and Guestrin, 2016).
-2. Prevents overfitting to historical patterns.
+2. Prevents overfitting to historical patterns e.g internally pruning trees in each iteration.
 3. Designed to model non-linear relationships, it can capture non-linear patterns observed in the cryptocurrency markets.
 
 PyCaret was utilised for efficient model optimisation. The optimisation process, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
@@ -268,31 +267,91 @@ xgb_model = xgb_exp.create_model('xgboost')
 | Model                     | MAE       | MSE          | RMSE      | R²     | RMSLE  | MAPE   |
 |---------------------------|-----------|--------------|-----------|--------|--------|--------|
 | Extreme Gradient Boosting | 9053.9287 | 243341152.00 | 15599.3955 | 0.4389 | 0.1972 | 0.1044 |
-*Table: XGBoost Results - Initial Experiment with 5 year BTC Close Price Data*
+*Table: XGBoost PyCaret Results - Initial Experiment with 5 year BTC Close Price and Lagged Data*
 
 Utilising derived features for training the candidate model yielded 
 
-XGBoost emerged as the best-performing model due to its ability to capture non-linear relationships and handle the high volatility characteristic of cryptocurrency data. The model was configured with the following hyperparmeters:
+XGBoost emerged as the best-performing model due to its ability to handle the high volatility characteristic of cryptocurrency data. The initial model was configured with the following hyperparmeters:
 
-- Subsample: 0.8 (to reduce overfitting)
-- Max depth: 4 (balancing model complexity with generalization)
+- Subsample: 0.7 (to reduce overfitting)
+- Max depth: 10 (balancing model complexity with generalization)
 - Learning rate: 0.05 (enabling regularisation between training iterations)
 - Number of estimators: 200 (providing sufficient model complexity)
 
-These parameters align with best practices established by Dutta et al. (2020), who identified similar optimal configurations for financial time series prediction.
+These parameters align with best practices established by Dutta et al. (2020), who identified similar configurations for financial time series prediction.
 
-Derived features were extracted from the close prices which yielded strong performance scores. This introduced a challenge that necessitated these exogenous variables in unseen data. With respect the objective of achieving the highest accuracy, modelling the exogenous variables on highly voltatile data was impractical and introduced additional computational overhead.
+Features were extracted from the close prices which yielded strong performance scores. This introduced a challenge that necessitated these exogenous variables in unseen data. With respect the objective of achieving the highest accuracy, modelling the exogenous variables on highly voltatile data was impractical and introduced additional computational overhead.
 
 To facilitate and simplify multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This method was chosen over recursive forecasting due to the potential for superior performance identified in the findings of Lim and Zohren (2021).
+
+----
+```Python
+@st.cache_data
+def train_forecast_model(df, forecast_horizon=90, input_window=180):
+    """Train an XGBoost model for multi-step forecasting with proper scaling and continuity"""
+    # Prepare features - drop unnecessary columns first
+    if 'symbol' in df.columns:
+        df = df.drop('symbol', axis=1)
+    if 'volume' in df.columns:
+        df = df.drop('volume', axis=1)
+    
+    df_features = add_features(df)
+    
+    # Define train/test split
+    train_split = 0.8
+    
+    # Set up PyCaret experiment
+    experiment = RegressionExperiment().setup(
+        data=df_features,
+        target='original_close',  # Use original prices as target
+        data_split_shuffle=False,
+        fold=5,
+        fold_strategy='timeseries',
+        session_id=456,
+        train_size=train_split,
+        remove_multicollinearity=True,
+        feature_selection=True,
+        feature_selection_estimator='rf',
+        verbose=False
+    )
+    
+    # Create and tune model
+    xgb = experiment.create_model("xgboost")
+    xgb_tuned = experiment.tune_model(xgb)
+    
+    # Get transformed dataset
+    final_df = experiment.dataset_transformed
+
+    # Define feature columns (excluding target)
+    feature_cols = [col for col in final_df.columns if col != 'original_close' and col != 'close']
+
+    # Create sequences for training
+    X, y, target_dates = create_sequences(final_df, window=input_window, horizon=forecast_horizon)
+
+    # Create MultiOutputRegressor
+    model = MultiOutputRegressor(xgb_tuned)
+    
+    # Train on all data before forecasting
+    model.fit(X, y)
+
+    # Get latest input window for forecasting
+    latest_window = final_df.iloc[-input_window:][feature_cols].values.flatten().reshape(1, -1)
+
+    # Make forecast
+    forecast = model.predict(latest_window)[0]
+```  
+*Figure: XGBoost Train and Forecast Pipeline - see 'streamlit-crypto-dashboard.py'*
+
+----
 
 This method was validated through extensive backtesting and yielded poorer performance scores than single-step forecasting:
 
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|-------|-----|
-| Bitcoin (BTC)  | 13740.86 | 384630252.17 | 19611.99 | -0.45 |  
-*Table: Multi-output XGBoost Regressor Scores*
+| Bitcoin (BTC)  | 13010.52 | 338653216.00 | 18402.53 | -0.30 |  
+*Table: Multi-output XGBoost Regressor Bitcoin Scores*
 
-This is mainly due to the degradation in prediction accuracy over wider forecast windows (TODO cite). Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and including lower ranked features improved performance.
+This is due to the degradation in prediction accuracy over wider forecast windows (TODO cite). In addition, the scores were calculated on unseen data (approximately 1 year), where bitcoin exhibiting a substantial and sudden increase in value. Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and lower ranked features improved performance.
 
 ### Model Evaluation Results
 
@@ -300,27 +359,31 @@ The model evaluation revealed significant performance variations across differen
 
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|---------|-------|   
-| Bitcoin (BTC)  |  13740.86 | 384630252.17 | 19611.99 | -0.45 |   
-| Ethereum (ETH) | 98.91     | 17331.24    | 131.65 | 0.94 |
-| Litecoin (LTC) | 3.30      | 27.25       | 5.22 |  0.94  |
-| Binance Coin (BNB) | 53.35 | 4863.66    | 69.74 | -0.37 |  
+| Bitcoin (BTC)  | 13010.52 | 338653216.00 | 18402.53 | -0.30 |  
+| Binance Coin (BNB) | 42.44 | 2977.98    | 54.57 | 0.15 |  
+| Ethereum (ETH) | 102.06     | 18230.96    | 135.02 | 0.93 |
+| Litecoin (LTC) | 3.26      | 25.40       | 5.04 |  0.94  |
 *Table: XGBoost Evaluation Across Multiple Cyptocurrencies*
 
 These results highlight several important observations:
 
-1. Litecoin and Ethereum showed the best predictive performance with an R² of 0.94, indicating that the model captured approximately 93% of the price variance. However, leading to overfitting.
+![Figure: Evaluation of Final Pipeline - Ethereum](images/xgboost-final-eval-eth.png)
 
-2. Bitcoin and Binance Coin proved particularly difficult to forecast, with negative R² values suggesting that the model performed worse than an ensemble learning method for these assets.
+1. Litecoin and Ethereum showed the best predictive performance with an R² of 0.93 and 0.94 respectively, indicating that the model captured over 90 % of the price variance. However, leading to overfitting.
+
+![Figure: Evaluation of Final Pipeline - BNB Coin](images/xgboost-bnb-final-eval.png)
+
+2. Bitcoin and Binance Coin proved particularly difficult to forecast, with low R² values suggesting that the model performed worse than an ensemble learning method for these assets.
 
 The short-term partial autocorrelation and performance scores highlight the importance of training the model on as much recent data as possible. The table above, presents scores determined over a holdout period (20 %) equivalent to one year of data.
 
 Further experiments with feature combinations and model configurations revealed that:
 
-1. Using moving average, price change and 1-day lag, consistently produced better results for BNB and BTC compared to just using short term lags.
+1. Using scaled moving average, price change and RSI values, consistently produced better results for BNB and BTC compared to just using short term lags.
 
 2. The performance discrepancies across currencies correlate with their non-stationary properties, supporting the hypothesis that stationary assets are inherently more predictable.
 
-The final model configuration adopted a best-fit approach, using the best-performing feature set and hyperparameters accross coins selected from each cluster. This decision prioritised forecast accuracy, aligning with the project's objective of maximising predictive performance.
+The final model configuration adopted a best-fit approach, using the best-performing feature set and hyperparameters accross representative coins from each cluster. This decision prioritised forecast accuracy, aligning with the project's objective of maximising predictive performance.
 
 ## Interactive Dashboard Development
 
@@ -332,7 +395,6 @@ The dashboard architecture implements distinct functional components:
 
 1. **Data management**:
    - API connection via the `get_crypto_data()` function.
-   - Fallback mechanism through `generate_mock_data()`.
    - News retrieval via `get_crypto_news()`.
    - Caching with `@st.cache_data` for performance optimisation.
 
@@ -343,38 +405,58 @@ The dashboard architecture implements distinct functional components:
 
 3. **Forecasting components**:
    - Model training pipeline in `train_forecast_model()`.
+
+![Figure: Model Training Pipeline Overview](images/model-training-pipeline.svg)
+
    - Investment recommendation in `calculate_buy_recommendation()`.
    - What-if scenario analysis in `calculate_profit_scenarios()`.
 
 4. **Visualisation modules**:
    - Price history charts
-   - Moving average visualizations
+   - Moving average visualisations
    - Forecast projection with confidence intervals
    - Correlation heatmaps
    - Performance metrics displays
 
-The user interface employs tab-based navigation to organise related visualisations and controls, maintaining consistent visual style. This structure preserves shared context (selected cryptocurrency, time range) while organising specific analytical functions.
+The user interface leverages tab-based navigation to organise related visualisations and controls, maintaining a consistent visual style. This structure preserves shared context (selected cryptocurrency, time range) while organising analytical components.
 
 ### User Interface Features
 
 The dashboard provides the following user interface elements:
 
-1. **Dashboard controls**:
-   - Cryptocurrency selector with support for major coins (BTC, ETH, LTC, BNB).
+1. **Sidebar controls**:
+
+![Figure: Dashboard Sidebar](images/dashboard-sidebar.png)
+
+   - Cryptocurrency selector with support for major coins i.e. the top thirty market-cap.
    - Time interval slider for adjusting analysis timeframes (7, 14, 30, 60 and 90 days).
    - Target profit parameter for customising investment recommendations.
    - Data refresh button for real-time updates.
 
 2. **Market overview**:
+
+![Figure: Market Overview](images/market-overview.png)
+
    - Current price display with change indicators.
    - Volatility metrics calculated over a 30-day window.
    - Market state assessment (bullish/bearish) with confidence rating.
    - 24-hour trading volume metrics.
 
 3. **Analysis tabs**:
+
+![Figure: Price History](images/price-hist.png)
+
    - Price History: Line charts showing historical price movements.
-   - Moving Averages: Technical analysis view with 7-day and 30-day MAs.
+  
+![Figure: Moving Averages](images/dashboard-ma.png)
+
+   - Moving Averages: Technical analysis view with 7-day and 30-day MAs. Including buy and sell signals.
+
+![Figure: Forecast Mode](images/forecast-mode.png)
+
    - Price Forecast: Projection charts with confidence intervals.
+
+![Figure: Corrleation (top left), investment calculator (top right), related news (bottom left). What-ifs, KPIs and Coin Trend-Prediction (bottom right)](images/dashboard-supplementary.png)
 
 4. **Correlation analysis**:
    - Positive correlation panel showing most closely aligned assets.
@@ -408,7 +490,43 @@ The dashboard implementation faces several limitations that affect its utility a
 
 3. The dashboard should implement more sophisticated cache mechanisms to balance freshness with availability. For example, saving live data and using this during periods of API unavailability, refreshing the static dataset when it becomes stale.
 
-4. The evaluation metrics might not fully capture the practical utility of forecasts for investment decision-making (TODO cite).
+4. The live-trained model tends to forecast with a significant offset from the last historical observation, despite more consistent forecasts during offline evaluation. This required a scaling factor applied to some forecasts. This could be due to larger sequences of training data performed on the muilti-output regressor in the Streamlit dashboard.
+
+| timestamp           |   original_close | Forecast
+|:--------------------:|-----------------:|-----------------:|
+| 2025-04-16 | 1577.14  ||
+| 2025-04-17 | 1583.62 ||
+| 2025-04-18 | 1588.27 ||
+| 2025-04-19	| | 1581.05 |
+| 2025-04-20   | | 1606.32 |
+| 2025-04-21   | | 1559.97 |  
+*Table: Ethereum - Transition From Historical to Forecast - see xgboost-time-series Notebook*
+
+----
+```Python
+features = list(joblib.load("../backend/models/ETHUSDT-features-2025-05-07.pkl"))
+eth = joblib.load("../backend/models/ETHUSDT-2025-05-07.pkl")
+eth_scaler = joblib.load(f"../backend/models/ETHUSDT-scaler-2025-05-07.pkl")
+
+df, _ = add_features(df)
+
+# restore original close values for target
+df = df.loc[:,features+['original_close', 'close']]
+
+print(df.tail(3).to_markdown())
+
+X, y, eth_dates = create_sequences(df)
+
+# finalise the trained model on the unseen data
+eth.fit(X, y)
+
+future_df = forecast(df, eth)
+
+future_df.head()
+```  
+*Figure: Model Evaluation - Forecast Code Snippet*
+
+---
 
 ### Technical Challenges
 
@@ -516,6 +634,10 @@ Taylor, S.J. and Letham, B. (2018) 'Forecasting at scale', The American Statisti
 
 ## Appendix
 
+## Dashboard overview
+
+![Figure: Dashboard Overview](images/dashboard-overview.png)
+
 ### Project repository
 
 The readme contains an overview of the analysis notebooks and their location. In addition, installation and running instructions:
@@ -540,22 +662,21 @@ The table below shows the relative importance of features for the XGBoost model 
 
 | Feature | Importance |
 |:--------|----------:|
-| close_lag_1 | 0.89 |
-| close_lag_3 | 0.027 |
-| close_lag_5 | 0.012 |
-| ma7 | 0.05 |
-| ma30 | 0.03 |
-| rsi | 0.0002 |
-| std7 | 8.48e-05 |
-| price_change_7d | 0.0002 |
-| price_change_1d | 0.0023 |
+| high  | 0.50 |
+| low  | 0.46 |
+| close_lag_3 | 0.008 |
+| ma7 | 0.008 |
+| ma30 | 0.008 |
+| rsi | 0.00009 |
+| price_change_1d | 0.0004 |
+| price_change_7d | 0.00005 |
 
 ### PyCaret Optimization Process
 
 The PyCaret optimization workflow involves:
 
 1. Setup phase with time series cross-validation
-2. Model comparison across multiple algorithms
-3. Hyperparameter tuning of the best-performing model (XGBoost)
-4. Final model training with optimized parameters
-5. Integration with MultiOutputRegressor for sequence prediction
+2. Hyperparameter tuning of the best-performing model (XGBoost)
+3. Integration with MultiOutputRegressor for sequence prediction
+4. Evaluation of the multi-output regressor (external to PyCaret)
+
