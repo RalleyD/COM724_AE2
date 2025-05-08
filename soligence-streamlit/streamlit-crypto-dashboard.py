@@ -583,7 +583,7 @@ def main():
     st.markdown('Real-time analysis and predictions for cryptocurrency markets')
 
     with st.spinner('Getting top 30 market cap coins...'):
-        top_market_cap = get_top_30()
+        top_market_cap = sorted(get_top_30())
     
     # Sidebar for controls
     with st.sidebar:
@@ -594,7 +594,7 @@ def main():
         selected_coin = st.selectbox(
             'Select Cryptocurrency',
             options=[coin.rstrip("USDT") for coin in top_market_cap],
-            index=0
+            index=top_market_cap.index("BTC")
         )
 
         # Time interval selection
