@@ -569,61 +569,61 @@ def calculate_moving_averages(df, windows=[7, 30]):
         ma_data[f'ma{window}'] = df['close'].rolling(window=window).mean()
         
     # create buy and sell signals i.e x-axis points
-    
     ma_buy_sell_df = ma_data.copy()
     ma_buy_sell_df.dropna(inplace=True)
     ma_data_iter = ma_buy_sell_df.itertuples()
     current_short = next(ma_data_iter)
     current_short_ma = current_short.ma7
-    curr_long_ma = current_short.ma30
     current_short_id = current_short.Index
     buy_signals = []
     sell_signals = []
-    
+    crossed_above = False
+    crossed_below = False
+        
     for row in ma_data_iter:
-        # if np.isnan(row.ma7) or np.isnan(row.ma30):
-        #     # current_short_ma = row.ma7
-        #     # current_short_id = row.Index
-        #     continue
-        # if row.ma7 == row.ma30:
-        #     # is the short term average increasing
-        #     if row.ma7 > current_short:
-        #         # buy signal
-        #         buy_signals.append(row.ma7)
-        #         current_short = row.ma7
         if row.ma7 >= row.ma30:
+            if crossed_above:
+                current_short_ma = row.ma7
+                current_short_id = row.Index
+                continue
             print("ma7 higher than long")
             print(row.ma7, row.ma30)
             print(current_short_ma)
             print(row.Index)
-            if current_short_ma < row.ma30:
+            if current_short_ma < row.ma7:
                 print("current short less than latest long")
                 print(current_short_id)
                 # buy signal
                 # if current_short_id != row.Index:
-                buy_signals.append(row.Index)
+                current_short_ma = row.ma7
+                current_short_id = row.Index
+                buy_signals.append(current_short_id)
+                # for checking new sell signal
+                crossed_above = True
+                crossed_below = False
             current_short_ma = row.ma7
-            
-                
-                    # current_short_id = row.Index
-        # elif row.ma7 < row.ma30:
-        #     if current_short_ma >= row.ma30:
-        #         print(current_short_ma)
-        #         print(current_short_id)
-        #         # sell signal
-        #         sell_signals.append(current_short_id)
-        #         current_short_ma = row.ma7
-        #         current_short_id = row.Index
-        else:
+            current_short_id = row.Index
+        elif row.ma7 <= row.ma30:
+            if crossed_below:
+                current_short_ma = row.ma7
+                current_short_id = row.Index
+                continue
+            if current_short_ma > row.ma30:
+                print("current short greater than latest long")
+                print(row.ma7, row.ma30)
+                print(current_short_ma)
+                print(current_short_id)
+                # sell signal
+                sell_signals.append(current_short_id)
+                crossed_below = True
+                crossed_above = False
             current_short_ma = row.ma7
-            # current_short_id = row.Index
-            # curr_long_ma = row.ma30
-            
+            current_short_id = row.Index
                 
     print("buy signals")
     print(buy_signals)
     print("sell signals")
-    print(sell_signals)                
+    print(sell_signals)            
     return ma_data
 
 
