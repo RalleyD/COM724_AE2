@@ -1,4 +1,4 @@
-# Cryptocurrency Forecasting Dashboard: Development and Evaluation Report
+# COM724 AE2: SOL-igence - Development and Evaluation Report
 
 ## Introduction
 
@@ -92,9 +92,8 @@ Correlation analysis identifies coins that follow or oppose the market behaviour
 
 |         |   HBAR-USD |   ADA-USD |   XRP-USD |   WBTC-USD |   TON-USD |   USDC-USD |   USDT-USD |   PI-USD |
 |:--------|-----------:|----------:|----------:|-----------:|----------:|-----------:|-----------:|---------:|
-| LTC-USD |   0.894071 |  0.884937 |    0.8645 |    0.86442 | -0.106227 | 0.00487731 |  0.0608996 | 0.132695 |
-
-*Table: Top Positively and Negatively Correlated Coins - Pearson Correlation*
+| LTC-USD |   0.894071 |  0.884937 |    0.8645 |    0.86442 | -0.106227 | 0.00487731 |  0.0608996 | 0.132695 |  
+Table: Top Positively and Negatively Correlated Coins - Pearson Correlation
 
 ### Exploratory Data Analysis and Time-Series Decomposition
 
@@ -105,8 +104,8 @@ Correlation analysis identifies coins that follow or oppose the market behaviour
 | BNB-USD | -3.67848 | 0.00442625 | -3.44844 | -2.86951 | -2.57102 | True         |
 | BTC-USD | -1.1333  | 0.701611   | -3.44844 | -2.86951 | -2.57102 | False        |
 | ETH-USD | -2.05408 | 0.263377   | -3.44844 | -2.86951 | -2.57102 | False        |
-| LTC-USD | -1.96639 | 0.301503   | -3.44844 | -2.86951 | -2.57102 | False        |
-  *Table: Statoinarity Analysis - ADF Test*
+| LTC-USD | -1.96639 | 0.301503   | -3.44844 | -2.86951 | -2.57102 | False        |  
+Table: Statoinarity Analysis - ADF Test
 
 2. Distribution: revealed asymmetric patterns with heavy left or right tails for most cryptocurrencies, with Bitcoin showing particularly high kurtosis.
 
@@ -179,7 +178,7 @@ ARIMA models have been widely used in financial forecasting (Box et al., 2015) t
 | Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
 |:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
 | ARIMA   | 1.2824 |  1.0809 | 3192.87 | 3989.93 | 0.0391 |  0.0379 | -1.4911 |  
-*Table: Arima Performance Evaluation - BTC Past 5 Year Close Prices*
+Table: Arima Performance Evaluation - BTC Past 5 Year Close Prices
 
 ![Figure: Arima Prediction Line Plot](images/arima-eval.png)  
 
@@ -196,14 +195,14 @@ Single exponential smoothing was selected for it's ability to perform regression
 | Model   |   MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |      R2 |
 |:--------|-------:|--------:|--------:|--------:|-------:|--------:|--------:|
 | Exponential Smoothing | 0.7698 |0.6517	| 5246.4672 | 6196.5309	| 0.0582	| 0.0556 |-1.3908 |  
-*Table: Exponential Smoothing Evaluation*
+Table: Exponential Smoothing Evaluation
 
 4. Differencing the data showed noticable improvement.
 
 | Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
 |------------------------|--------|--------|-----------|-----------|--------|--------|-------|
 | Exponential Smoothing | 1.2419 | 1.1864 | 1635.2009 | 2288.3155	 | 1.1406 | 1.4772 | -0.0723 |  
-*Table: Exponential Smoothing Evaluation - Differenced Data*
+Table: Exponential Smoothing Evaluation - Differenced Data
 
 ![Figure: Tuned Exponential Smoothing Plot - Trained on Differenced Data](images/exp-smooth-differenced-tuned.png)  
 
@@ -214,7 +213,7 @@ Leverages ensemble decision trees to model complex non-linear relationships. It 
 | Model                  | MASE   | RMSSE  | MAE       | RMSE      | MAPE   | SMAPE  | R²    |
 |------------------------|--------|--------|-----------|-----------|--------|--------|-------|
 | RandomForestRegressor | 1.1709 | 1.1426 | 1541.7756 | 2203.8583 | 1.3086 | 1.4074 | 0.0054 |  
-*Table: Random Forest Performance Evaluation*
+Table: Random Forest Performance Evaluation
 
 #### Prophet By Meta
 
@@ -229,7 +228,7 @@ Incorporates decomposable time-series models with trend and seasonality componen
 | Model   |    MASE |   RMSSE |     MAE |    RMSE |   MAPE |   SMAPE |       R2 |
 |:--------|--------:|--------:|--------:|--------:|-------:|--------:|---------:|
 | Prophet | 7.1681 | 5.3037 | 17327.8076 | 19026.5950 | 0.1915 | 0.1742 | -25.0629 |  
-*Table: Prophet Evaluation*
+Table: Prophet Evaluation
 
 Ultimately, leading to poor performance.
 
@@ -243,7 +242,8 @@ XGBoost doesn't assume stationarity, making it better suited for cryptocurrency 
 
 PyCaret was utilised for efficient model optimisation. The optimisation process, employed cross-validation with a time-series split to prevent data leakage and ensure realistic performance estimation.
 
----
+----
+
 ```Python
 from pycaret.regression import *
 
@@ -267,7 +267,7 @@ xgb_model = xgb_exp.create_model('xgboost')
 | Model                     | MAE       | MSE          | RMSE      | R²     | RMSLE  | MAPE   |
 |---------------------------|-----------|--------------|-----------|--------|--------|--------|
 | Extreme Gradient Boosting | 9053.9287 | 243341152.00 | 15599.3955 | 0.4389 | 0.1972 | 0.1044 |
-*Table: XGBoost PyCaret Results - Initial Experiment with 5 year BTC Close Price and Lagged Data*
+Table: XGBoost PyCaret Results - Initial Experiment with 5 year BTC Close Price and Lagged Data
 
 Utilising derived features for training the candidate model yielded 
 
@@ -285,6 +285,7 @@ Features were extracted from the close prices which yielded strong performance s
 To facilitate and simplify multi-step forecasting, the optimized XGBoost model was wrapped in a MultiOutputRegressor, enabling simultaneous prediction of multiple future time points. This method was chosen over recursive forecasting due to the potential for superior performance identified in the findings of Lim and Zohren (2021).
 
 ----
+
 ```Python
 @st.cache_data
 def train_forecast_model(df, forecast_horizon=90, input_window=180):
@@ -349,7 +350,7 @@ This method was validated through extensive backtesting and yielded poorer perfo
 | Cryptocurrency | MAE        | MSE            | RMSE    | R²    |
 |----------------|------------|----------------|-------|-----|
 | Bitcoin (BTC)  | 13010.52 | 338653216.00 | 18402.53 | -0.30 |  
-*Table: Multi-output XGBoost Regressor Bitcoin Scores*
+Table: Multi-output XGBoost Regressor Bitcoin Scores
 
 This may be due to the degradation in prediction accuracy over a wider forecast window (90 days). In addition, the scores were calculated on unseen data (approximately 1 year), where bitcoin exhibiting a substantial and sudden increase in value. Increasing model complexity did not yield significant improvements. Removal of highly correlated features (lagged data) and lower ranked features improved performance.
 
@@ -363,7 +364,7 @@ The model evaluation revealed significant performance variations across differen
 | Binance Coin (BNB) | 42.44 | 2977.98    | 54.57 | 0.15 |  
 | Ethereum (ETH) | 102.06     | 18230.96    | 135.02 | 0.93 |
 | Litecoin (LTC) | 3.26      | 25.40       | 5.04 |  0.94  |
-*Table: XGBoost Evaluation Across Multiple Cyptocurrencies*
+Table: XGBoost Evaluation Across Multiple Cyptocurrencies
 
 These results highlight several important observations:
 
@@ -412,11 +413,11 @@ The dashboard architecture implements distinct functional components:
    - What-if scenario analysis in `calculate_profit_scenarios()`.
 
 4. **Visualisation modules**:
-   - Price history charts
-   - Moving average visualisations
-   - Forecast projection with confidence intervals
-   - Correlation heatmaps
-   - Performance metrics displays
+   - Price history charts.
+   - Moving average visualisations.
+   - Forecast projection with confidence intervals.
+   - Correlation heatmaps.
+   - Performance metrics displays.
 
 The user interface leverages tab-based navigation to organise related visualisations and controls, maintaining a consistent visual style. This structure preserves shared context (selected cryptocurrency, time range) while organising analytical components.
 
@@ -450,7 +451,7 @@ The dashboard provides the following user interface elements:
   
 ![Figure: Moving Averages](images/dashboard-ma.png)
 
-   - Moving Averages: Technical analysis view with 7-day and 30-day MAs. Including buy and sell signals.
+   - Moving Averages: 7-day and 30-day moving averages to pinpoint buy and sell signals (Farnschläder 2025).
 
 ![Figure: Forecast Mode](images/forecast-mode.png)
 
@@ -500,9 +501,10 @@ The dashboard implementation faces several limitations that affect its utility a
 | 2025-04-19	| | 1581.05 |
 | 2025-04-20   | | 1606.32 |
 | 2025-04-21   | | 1559.97 |  
-*Table: Ethereum - Transition From Historical to Forecast - see xgboost-time-series Notebook*
+Table: Ethereum - Transition From Historical to Forecast - see xgboost-time-series Notebook
 
 ----
+
 ```Python
 features = list(joblib.load("../backend/models/ETHUSDT-features-2025-05-07.pkl"))
 eth = joblib.load("../backend/models/ETHUSDT-2025-05-07.pkl")
@@ -610,6 +612,8 @@ DAS, D., P. KAYAL and M. MAITI, 2023. A K-means clustering model for analyzing t
 Dutta, A., Kumar, S. and Basu, M. (2020) 'A Gated Recurrent Unit Approach to Bitcoin Price Prediction', Journal of Risk and Financial Management, 13(2), article 23.
 
 Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li, L. (2022) 'Cryptocurrency trading: a comprehensive survey', Financial Innovation, 8(1), pp. 1-59.
+
+FARNSCHLÄDER, T., 2025. Bitcoin Price Patterns: A Time Series Analysis in Python [viewed March 14 2025]. Available from: https://www.datacamp.com/blog/python-bitcoin
 
 GROES ALBIN LUDVIGSEN, K., 2022. Multi-step time series forecasting with XGBoost [viewed April 28 2025]. Available from: https://towardsdatascience.com/multi-step-time-series-forecasting-with-xgboost-65d6820bec39/
 
