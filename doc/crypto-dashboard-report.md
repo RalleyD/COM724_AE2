@@ -6,6 +6,16 @@ The cryptocurrency market has experienced significant growth and volatility sinc
 
 This report documents the development of a cryptocurrency forecasting dashboard designed to address these challenges. The dashboard leverages machine learning techniques, real-time data integration, and interactive visualizations to provide actionable insights for cryptocurrency market participants. Expanding on conventional financial dashboards, this solution incorporates advanced time-series forecasting capabilities specifically optimised for cryptocurrency price prediction, correlation analysis, and investment decision support.
 
+## Literature Review
+
+The cryptocurrency forecasting domain has evolved from traditional statistical methods to advanced machine learning approaches. Corbet et al. (2019) established cryptocurrencies as a distinct asset class with unique volatility characteristics. Bariviera et al. (2017) identified non-linear dynamics in Bitcoin time series that challenge conventional modeling approaches.
+
+Traditional time series methods such as ARIMA (Box et al., 2015) have shown limitations with cryptocurrency data, primarily due to non-stationarity issues. McNally et al. (2018) demonstrated that ensemble and boosting techniques outperform traditional statistical models for Bitcoin price prediction. This finding was reinforced by Chen and Guestrin's (2016) introduction of XGBoost, which has proven particularly effective for handling non-linear financial data.
+
+Feature engineering approaches by Kristjanpoller and Minutolo (2018) highlighted the importance of combining technical indicators with traditional time series features, while Pintelas et al. (2020) emphasized how proper feature selection improves cryptocurrency forecasting accuracy. For multi-step forecasting, Lim and Zohren (2021) established best practices for direct prediction approaches over recursive methods, with Python implementations from Ludvigsen (2022).
+
+Recent work by Sezer et al. (2020) has documented deep learning applications to financial time series, suggesting potential future directions. Hachicha et al (2023) introduced clustering techniques to identify distinct cryptocurrency market segments, enabling more targeted modeling strategies across different asset classes.
+
 ## Objectives and Problem Definition
 
 ### Problem Definition
@@ -59,7 +69,7 @@ The preprocessing workflow consists of several key stages:
 
 ### Clustering and Correlation
 
-K-means clustering was used to determine relationships between cryptocurrencies. K-means clustering was chosen for its efficiency in identifying logical groupings of data (Das, Kayal and Maiti 2023).
+K-means clustering was used to determine relationships between cryptocurrencies. K-means clustering was chosen for its efficiency in identifying logical groupings of data (Hachicha et al. 2023).
 
 Using a dataset containing last year's close prices of the top 30 market cap coins, the dataset was transformed from long to wide format i.e each day's close price as columns and a single row for each coin. Providing each coin as an observation for clustering with a rich set of features. To aid clustering performance, the dimensionality of the data was reduced to its optimal principal components (2).
 
@@ -234,7 +244,7 @@ Ultimately, leading to poor performance.
 
 #### Extreme Gradient Boosting
 
-XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who applied similar boosting techniques to Bitcoin prediction. K, Ludvigsen (2022) reports, "XGBoost can outperform neural networks on a number of time series forecasting tasks". XGBoost has the potential advantages:
+XGBoost doesn't assume stationarity, making it better suited for cryptocurrency data as demonstrated by McNally et al. (2018), who applied similar boosting techniques to Bitcoin prediction. Ludvigsen (2022) reports, "XGBoost can outperform neural networks on a number of time series forecasting tasks". XGBoost has the potential advantages:
 
 1. Iteratively building trees from the residuals of the prior, helps to capture complex temporal patterns (Chen and Guestrin, 2016).
 2. Prevents overfitting to historical patterns e.g internally pruning trees in each iteration.
@@ -616,6 +626,8 @@ Fang, F., Ventre, C., Basios, M., Kanthan, L., Martinez-Rego, D., Wu, F. and Li,
 FARNSCHLÄDER, T., 2025. Bitcoin Price Patterns: A Time Series Analysis in Python [viewed March 14 2025]. Available from: https://www.datacamp.com/blog/python-bitcoin
 
 GROES ALBIN LUDVIGSEN, K., 2022. Multi-step time series forecasting with XGBoost [viewed April 28 2025]. Available from: https://towardsdatascience.com/multi-step-time-series-forecasting-with-xgboost-65d6820bec39/
+
+HACHICHA, F. et al., 2023. Herding behavior in exploring the predictability of price clustering in cryptocurrency market. Finance research letters, 57, 104178
 
 Ji, S., Kim, J. and Im, H. (2019) 'A comparative study of Bitcoin price prediction using deep learning', Mathematics, 7(10), article 898.
 
