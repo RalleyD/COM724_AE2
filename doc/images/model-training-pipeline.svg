@@ -1,0 +1,60 @@
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Title -->
+  <text x="400" y="30" font-family="Arial" font-size="20" text-anchor="middle" font-weight="bold">PyCaret Optimization for Multi-Step Forecasting</text>
+  
+  <!-- Original Data -->
+  <rect x="50" y="70" width="200" height="100" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="5" ry="5"/>
+  <text x="150" y="100" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">Original BTC Dataset</text>
+  <text x="150" y="130" font-family="Arial" font-size="14" text-anchor="middle">Close prices + features</text>
+  <text x="150" y="150" font-family="Arial" font-size="14" text-anchor="middle">5 years of data</text>
+  
+  <!-- Feature Engineering -->
+  <rect x="50" y="220" width="200" height="100" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="5" ry="5"/>
+  <text x="150" y="250" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">Feature Engineering</text>
+  <text x="150" y="280" font-family="Arial" font-size="14" text-anchor="middle">Add lagged features</text>
+  <text x="150" y="300" font-family="Arial" font-size="14" text-anchor="middle">Technical indicators</text>
+  
+  <!-- Sequence Creation -->
+  <rect x="300" y="70" width="200" height="100" fill="#fff3e0" stroke="#ff9800" stroke-width="2" rx="5" ry="5"/>
+  <text x="400" y="100" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">Sequence Creation</text>
+  <text x="400" y="130" font-family="Arial" font-size="14" text-anchor="middle">Input: 60-day windows</text>
+  <text x="400" y="150" font-family="Arial" font-size="14" text-anchor="middle">Target: Next 30 days</text>
+  
+  <!-- PyCaret Optimization -->
+  <rect x="300" y="220" width="200" height="100" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="5" ry="5"/>
+  <text x="400" y="250" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">PyCaret Optimization</text>
+  <text x="400" y="280" font-family="Arial" font-size="14" text-anchor="middle">Sample of X_train</text>
+  <text x="400" y="300" font-family="Arial" font-size="14" text-anchor="middle">Only first target day</text>
+  
+  <!-- MultiOutputRegressor -->
+  <rect x="550" y="145" width="200" height="100" fill="#ffebee" stroke="#f44336" stroke-width="2" rx="5" ry="5"/>
+  <text x="650" y="175" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">MultiOutputRegressor</text>
+  <text x="650" y="205" font-family="Arial" font-size="14" text-anchor="middle">Optimized XGBoost</text>
+  <text x="650" y="225" font-family="Arial" font-size="14" text-anchor="middle">Full sequence targets</text>
+  
+  <!-- Arrows -->
+  <line x1="150" y1="170" x2="150" y2="220" stroke="#333" stroke-width="2"/>
+  <polygon points="150,220 145,210 155,210" fill="#333"/>
+  
+  <line x1="250" y1="120" x2="300" y2="120" stroke="#333" stroke-width="2"/>
+  <polygon points="300,120 290,115 290,125" fill="#333"/>
+  
+  <line x1="400" y1="170" x2="400" y2="220" stroke="#333" stroke-width="2"/>
+  <polygon points="400,220 395,210 405,210" fill="#333"/>
+  
+  <line x1="500" y1="270" x2="550" y2="195" stroke="#333" stroke-width="2"/>
+  <polygon points="550,195 540,198 543,208" fill="#333"/>
+  
+  <line x1="500" y1="120" x2="585" y2="145" stroke="#333" stroke-width="2" stroke-dasharray="5,5"/>
+  <polygon points="585,145 573,142 578,152" fill="#333"/>
+  
+  <!-- Labels -->
+  <text x="175" y="200" font-family="Arial" font-size="12" text-anchor="middle">1. Prepare</text>
+  <text x="275" y="100" font-family="Arial" font-size="12" text-anchor="middle">2. Create</text>
+  <text x="375" y="200" font-family="Arial" font-size="12" text-anchor="middle">3. Sample</text>
+  <text x="525" y="240" font-family="Arial" font-size="12" text-anchor="middle">4. Optimize</text>
+  <text x="540" y="120" font-family="Arial" font-size="12" text-anchor="middle">5. Apply to full sequences</text>
+</svg>
