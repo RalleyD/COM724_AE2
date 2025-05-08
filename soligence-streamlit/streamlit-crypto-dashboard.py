@@ -836,8 +836,13 @@ def main():
         correlations = get_correlations(selected_coin, all_coins_data)
 
         # Split into positive and negative correlations
-        positive_corr = [
-            c for c in correlations if c['trend'] == 'positive']
+        if len(correlations) >= 4:
+            positive_corr = [
+                c for c in correlations[:4] if c['trend'] == 'positive']
+        else:
+            positive_corr = [
+                c for c in correlations if c['trend'] == 'positive']
+            
         negative_corr = [
             c for c in correlations if c['trend'] == 'negative']
 
