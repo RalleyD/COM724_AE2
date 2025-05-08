@@ -23,7 +23,6 @@ warnings.filterwarnings('ignore')
 
 #### TODO ####
 # get_market_state should use percentage change from pandas
-# Check best practices for 7 and 30 day moving average plots
 # confidence interval (look this up)
 
 # Set page configuration
@@ -586,15 +585,8 @@ def calculate_moving_averages(df, windows=[7, 30]):
                 current_short_ma = row.ma7
                 current_short_id = row.Index
                 continue
-            print("ma7 higher than long")
-            print(row.ma7, row.ma30)
-            print(current_short_ma)
-            print(row.Index)
             if current_short_ma < row.ma7:
-                print("current short less than latest long")
-                print(current_short_id)
                 # buy signal
-                # if current_short_id != row.Index:
                 current_short_ma = row.ma7
                 current_short_id = row.Index
                 buy_signals.append(current_short_id)
@@ -609,21 +601,13 @@ def calculate_moving_averages(df, windows=[7, 30]):
                 current_short_id = row.Index
                 continue
             if current_short_ma > row.ma30:
-                print("current short greater than latest long")
-                print(row.ma7, row.ma30)
-                print(current_short_ma)
-                print(current_short_id)
                 # sell signal
                 sell_signals.append(current_short_id)
                 crossed_below = True
                 crossed_above = False
             current_short_ma = row.ma7
             current_short_id = row.Index
-                
-    print("buy signals")
-    print(buy_signals)
-    print("sell signals")
-    print(sell_signals)            
+          
     return ma_data, buy_signals, sell_signals
 
 
@@ -877,7 +861,6 @@ def main():
         ))
 
         # Add forecast line
-        # print(forecast.loc[forecast.index[:time_interval], 'date'].tail())
         fig.add_trace(go.Scatter(
             x=forecast.loc[forecast.index[:time_interval], 'date'],
             y=forecast.loc[forecast.index[:time_interval], 'predicted'],
