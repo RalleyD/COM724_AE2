@@ -828,6 +828,9 @@ def main():
             line=dict(color='#F59E0B', width=2)
         ))
         
+        # only add one shape to the legend
+        show_legend = True
+        
         for buy in buy_signals:
             # Add vertical dotted green line for buy signals
             fig.add_vline(x=buy,
@@ -835,15 +838,19 @@ def main():
                           line_dash='dash',
                           line_color="green",
                           name="Buy Signal",
-                          showlegend=True)
+                          showlegend=show_legend)
             # Add vertical dotted red line for sell signals
+            show_legend = False
+        
+        show_legend = True
         for sell in sell_signals:
             fig.add_vline(x=sell,
                           line_width=2,
                           line_dash='dash',
                           line_color="red",
                           name="Sell Signal",
-                          showlegend=True)
+                          showlegend=show_legend)
+            show_legend = False
 
         fig.update_layout(
             title=f'{selected_coin} Moving Averages',
