@@ -22,8 +22,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 #### TODO ####
-# get_market_state should use percentage change from pandas
-# confidence interval (look this up)
+# actual confidence interval (look this up)
 
 # Set page configuration
 st.set_page_config(
@@ -475,10 +474,18 @@ def get_market_state(data_dict):
     major_coins = []
     for symbol, change in changes.items():
         # Simple prediction based on recent trend
+        # Higher change = higher confidence
+        # Start at 50% for a neutral confidence level regardless of the
+        # magnitude of the price change.
+        # i.e there is at least a 50:50 chance of the trend prediction being
+        # correct.
+        # Dividing by 50 (midpoint) ensures that the probability increment
+        # isn't too large.
+        # Absolute, for a percentage confidence of upward or downward change.
+        # Cap to 95 % to avoid overconfidence
         major_coins.append({
             'name': symbol,
             'trend': 'up' if change > 0 else 'down',
-            # Higher change = higher confidence
             'probability': min(0.5 + abs(change) / 50, 0.95)
         })
 
