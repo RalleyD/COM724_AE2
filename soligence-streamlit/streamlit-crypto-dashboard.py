@@ -119,6 +119,9 @@ def get_crypto_data(symbol="BTC", interval="1d", limit=1000):
 
         # Set timestamp as index
         df = df.set_index('timestamp', drop=True)
+        
+        if any(pd.isna(df)):
+            df = missing_values(df)
 
         return df[['open', 'high', 'low', 'close', 'volume']]
     except Exception as e:
@@ -204,6 +207,21 @@ def get_correlations(base_symbol, all_symbol_data=None):
 
 # ----- Data Processing Functions -----
 
+
+def missing_values(df: pd.DataFrame):
+    # First interpolate linearly where possible
+    df = df.interpolate(method='time')
+
+    # Then forward-fill any remaining NAs (typically at the beginning of series)
+    # Good practice to fill with last known value, until new data becomes available.
+    df = df.fillna(method='ffill')
+
+    # Finally, drop any columns that still have NAs at the beginning
+    df = df.dropna(axis=1, how='any')
+    
+    return df
+
+
 def create_sequences(data, window=60, horizon=30, step=1):
     """Create sequences while tracking corresponding dates"""
     x = []
@@ -259,7 +277,7 @@ def add_features(df):
     for lag in [1, 2, 3, 5, 7, 14, 30]:
         data[f'close_lag_{lag}'] = data['close'].shift(lag)
 
-    # Add rolling stats
+    # Add rolling stats - SMA, S.D
     data['ma7'] = data['close'].rolling(window=7).mean()
     data['ma30'] = data['close'].rolling(window=30).mean()
     data['std7'] = data['close'].rolling(window=7).std()
@@ -597,7 +615,7 @@ def main():
 
         # Cryptocurrency selection
         selected_coin = st.selectbox(
-            'Select Cryptocurrency',
+            'Select Cryptocurrefncy',
             options=[coin.rstrip("USDT") for coin in top_market_cap],
             index=top_market_cap.index("BTC")
         )
@@ -628,6 +646,10 @@ def main():
     # Fetch data for selected coin
     with st.spinner(f'Fetching {selected_coin} data...'):
         coin_data = get_crypto_data(selected_coin, limit=365)
+
+        if coin_data.empty:
+            st.warning(f"{selected_coin} not available - Select Another Coin")
+            st.stop()
 
         # Get data for additional coins for market analysis
         all_coins_data = {
@@ -1027,44 +1049,11 @@ def main():
                 value=f"{kpis['volatility']*100:.1f}%"
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            # st.markdown(
-            #     '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
-            # st.metric(
-            #     label="BTC Dominance",
-            #     value=f"{kpis['dominance']:.1f}%"
-            # )
-            # st.markdown('</div>', unsafe_allow_html=True)
 
-            # st.markdown(
-            #     '<div class="card" style="background-color: #F3F4F6;">', unsafe_allow_html=True)
-            # st.metric(
-            #     label="Volatility (30d)",
-            #     value=f"{kpis['volatility']*100:.1f}%"
-            # )
-            # st.markdown('</div>', unsafe_allow_html=True)
-
-            # Market prediction
+        # Market prediction
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown(
             '<h3 style="font-weight: 600;">Major Coins Trend Prediction</h3>', unsafe_allow_html=True)
-
-        # Display trend predictions in a grid
-        # cols = st.columns(2)
-        # for i, coin in enumerate(market_state['major_coins']):
-        #     col_idx = i % 2
-        #     with cols[col_idx]:
-        #         colour = "#10B981" if coin['trend'] == 'up' else "#EF4444"
-        #         arrow = "↑" if coin['trend'] == 'up' else "↓"
-
-        #         st.markdown(
-        #             f'<div style="text-align: center; padding: 10px; background-color: #F9FAFB; border-radius: 8px; margin-bottom: 10px;">'
-        #             f'<div style="color: #EF4444; font-weight: 600;">{coin["name"]}</div>'
-        #             f'<div style="color: {colour}; font-weight: 600;">{arrow} {coin["probability"]*100:.0f}%</div>'
-        #             f'</div>',
-        #             unsafe_allow_html=True
-        #         )
-
-        # st.markdown('</div>', unsafe_allow_html=True)
 
         cols = st.container(border=False)
         with cols:
