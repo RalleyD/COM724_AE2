@@ -56,8 +56,11 @@ Crypto insights and forecaster
 - Trained-feature column lists.
 
 ## oustanding work
+
 - real confidence intervals for forecasting.
 - reactJS app.
+- iterative model training to improve runtime performance.
+- experiment with neural networks e.g LSTM for better accuracy.
 
 ## Bugs
 
