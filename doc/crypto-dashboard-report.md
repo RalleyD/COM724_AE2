@@ -38,7 +38,7 @@ To address these challenges, the project established the following key objective
 
 2. Develop interactive visualisations that adapt to user preferences, including time interval selection, profit targets, and specific cryptocurrencies of interest.
 
-3. Create predictive models capable of generating price forecasts across useful timeframes with quantifiable confidence levels.
+3. Create predictive models capable of generating price forecasts across useful timeframes with accuracy as a priority.
 
 4. Provide recommendations on optimal entry points and target prices based on user-defined profit goals.
 
@@ -279,8 +279,6 @@ xgb_model = xgb_exp.create_model('xgboost')
 | Extreme Gradient Boosting | 9053.9287 | 243341152.00 | 15599.3955 | 0.4389 | 0.1972 | 0.1044 |
 Table: XGBoost PyCaret Results - Initial Experiment with 5 year BTC Close Price and Lagged Data
 
-Utilising derived features for training the candidate model yielded 
-
 XGBoost emerged as the best-performing model due to its ability to handle the high volatility characteristic of cryptocurrency data. The initial model was configured with the following hyperparmeters:
 
 - Subsample: 0.7 (to reduce overfitting)
@@ -493,7 +491,7 @@ The visual design employs a consistent color scheme with semantic meaning (green
 
 The dashboard implementation faces several limitations that affect its utility and performance:
 
-1. The forecasting process requires approximately one minute to complete when a coin is selected or data is refreshed, impacting the real-time analysis experience.
+1. The forecasting process requires approximately 30 seconds to complete when a coin is selected or data is refreshed, impacting the real-time analysis experience.
    - This latency stems from the and the computational demands of the XGBoost model training, compounded by the multi-step configuration.
 
 2. The forecasting performance varies significantly across different cryptocurrencies, with Bitcoin showing particularly poor results despite being the most commonly analyzed asset.
@@ -667,6 +665,192 @@ https://github.com/RalleyD/COM724_AE2
 | ARIMA | 2.8555 | 2.3083 | 6860.5286 | 8222.2546 | 0.0760 | 0.0741 | -3.1024 | 0.0380 |
 | Prophet | 6.7363 | 4.9985 | 16263.5200 | 17906.3268 | 0.1788 | 0.1674 | -22.3559 | 0.2120 |
 
+#### XGBoost Pipeline Iteration Tests
+
+##### close, 1-lag, ma7, ma30, std7, 1d change, 7d change, RSI
+
+--- BTCUSDT ---
+
+multi step model MAE: 13740.86
+
+multi step model MSE: 384630252.17
+
+multi step model RMSE: 19611.99
+
+multi step model R2: -0.45
+
+--- BNBUSDT ---
+
+multi step model MAE: 53.35
+
+multi step model MSE: 4863.66
+
+multi step model RMSE: 69.74
+
+multi step model R2: -0.37
+
+--- ETHUSDT ---
+
+multi step model MAE: 98.91
+
+multi step model MSE: 17331.24
+
+multi step model RMSE: 131.65
+
+multi step model R2: 0.94
+
+--- LTCUSDT ---
+
+multi step model MAE: 3.30
+
+multi step model MSE: 27.25
+
+multi step model RMSE: 5.22
+
+multi step model R2: 0.94
+
+##### high, low, close, 1-lag, ma7, ma30, std7, 1d change, 7d change, RSI
+
+--- BTCUSDT ---
+
+multi step model MAE: 11825.89
+
+multi step model MSE: 299467039.17
+
+multi step model RMSE: 17305.12
+
+multi step model R2: -0.15
+
+
+--- BNBUSDT ---
+
+multi step model MAE: 46.33
+
+multi step model MSE: 3901.85
+
+multi step model RMSE: 62.46
+
+multi step model R2: -0.12
+
+--- ETHUSDT ---
+
+multi step model MAE: 94.42
+
+multi step model MSE: 16009.03
+
+multi step model RMSE: 126.53
+
+multi step model R2: 0.94
+
+##### drop multicolinearity
+
+--- BTCUSDT ---
+
+multi step model MAE: 12746.87
+
+multi step model MSE: 334476832.00
+
+multi step model RMSE: 18288.71
+
+multi step model R2: -0.28
+
+--- BNBUSDT ---
+
+multi step model MAE: 53.05
+
+multi step model MSE: 4672.18
+
+multi step model RMSE: 68.35
+
+multi step model R2: -0.33
+
+##### multicolinearity removal, select important features (random forest estimator)
+
+--- BTCUSDT ---
+
+multi step model MAE: 13516.84
+
+multi step model MSE: 318438752.00
+
+multi step model RMSE: 17844.85
+
+multi step model R2: -0.22
+
+--- BNBUSDT ---
+
+multi step model MAE: 47.64
+
+multi step model MSE: 3968.34
+
+multi step model RMSE: 62.99
+
+multi step model R2: -0.13
+
+--- ETHUSDT ---
+
+multi step model MAE: 100.68
+
+multi step model MSE: 17724.36
+
+multi step model RMSE: 133.13
+
+multi step model R2: 0.93
+
+--- LTCUSDT ---
+
+multi step model MAE: 3.71
+
+multi step model MSE: 31.51
+
+multi step model RMSE: 5.61
+
+multi step model R2: 0.93
+
+##### as above, with RobustScaler
+
+--- BTCUSDT ---
+
+multi step model MAE: 13010.52
+
+multi step model MSE: 338653216.00
+
+multi step model RMSE: 18402.53
+
+multi step model R2: -0.30
+
+--- BNBUSDT ---
+
+multi step model MAE: 42.44
+
+multi step model MSE: 2977.98
+
+multi step model RMSE: 54.57
+
+multi step model R2: 0.15
+
+--- ETHUSDT ---
+
+multi step model MAE: 102.06
+
+multi step model MSE: 18230.96
+
+multi step model RMSE: 135.02
+
+multi step model R2: 0.93
+
+--- LTCUSDT ---
+
+multi step model MAE: 3.26
+
+multi step model MSE: 25.40
+
+multi step model RMSE: 5.04
+
+multi step model R2: 0.94
+
+## PCA, drop multicolinearity, feature selection (as above)
+exited early, worst performance so far.
+
 ### Key Feature Importance
 
 The table below shows the relative importance of features for the XGBoost model optimized for Bitcoin prediction:
@@ -691,3 +875,127 @@ The PyCaret optimization workflow involves:
 3. Integration with MultiOutputRegressor for sequence prediction
 4. Evaluation of the multi-output regressor (external to PyCaret)
 
+### Code Snippets
+
+#### Data cleaning
+
+----
+
+```Python
+def missing_values(df: pd.DataFrame):
+    # First interpolate linearly where possible
+    df = df.interpolate(method='time')
+
+    # Then forward-fill any remaining NAs (typically at the beginning of series)
+    # Good practice to fill with last known value, until new data becomes available.
+    df = df.fillna(method='ffill')
+
+    # Finally, drop any columns that still have NAs at the beginning
+    df = df.dropna(axis=1, how='any')
+    
+    return df
+```  
+Figure: Data Cleaning
+
+----
+
+#### Sliding window sequences (training data)
+
+----
+
+``` Python
+def create_sequences(data, window=60, horizon=30, step=1):
+    """Create sequences while tracking corresponding dates"""
+    x = []
+    y = []
+    target_dates = []
+    
+    # Extract the target values
+    target_col = "original_close" if "original_close" in data.columns else 'close'
+    target = data[target_col].values
+    
+    # Get the feature columns
+    feature_cols = [col for col in data.columns if col != target_col and col != 'close']
+    
+    # Extract the feature values
+    features = data.loc[:, feature_cols].values
+    
+    # Loop over the dataset
+    for i in range(0, len(data) - window - horizon + 1, step):
+        # Get input window
+        x_i = features[i:i+window]
+        
+        # Get target sequence
+        y_i = target[i+window:i+window+horizon]
+        
+        # Get target dates
+        y_dates = data.index[i+window:i+window+horizon]
+        
+        # Make sure we have complete sequences
+        if len(x_i) == window and len(y_i) == horizon:
+            x.append(x_i.flatten())
+            y.append(y_i)
+            target_dates.append(y_dates)
+    
+    return np.array(x), np.array(y), target_dates
+```  
+Figure: Sliding Window Sequence Implementation
+
+----
+
+#### Feature Extraction and Scaling
+
+----
+
+```Python
+def add_features(df):
+    """Add technical indicators and features to the dataframe"""
+    # Create a copy of the dataframe
+    data = df.copy()
+    original_close = data['close'].copy()  # Save original close for target
+
+    # Add lagged features
+    for lag in [1, 2, 3, 5, 7, 14, 30]:
+        data[f'close_lag_{lag}'] = data['close'].shift(lag)
+
+    # Add rolling stats - SMA, S.D
+    data['ma7'] = data['close'].rolling(window=7).mean()
+    data['ma30'] = data['close'].rolling(window=30).mean()
+    data['std7'] = data['close'].rolling(window=7).std()
+
+    # Add price changes
+    data['price_change_1d'] = data['close'].pct_change(1)
+    data['price_change_7d'] = data['close'].pct_change(7)
+
+    # Calculate RSI (14-period)
+    delta = data['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    data['rsi'] = 100 - (100 / (1 + rs))
+
+    # Forward fill missing values
+    data = data.ffill()
+    # Drop any remaining NaN values
+    data = data.dropna()
+    
+    # Scale features
+    features = data.columns
+    scaler = RobustScaler()
+    valid_data = data[features]
+    scaler.fit(valid_data)
+    # Apply scaling to all features
+    data[features] = scaler.transform(data[features])
+
+    # Restore original close values for target
+    data['original_close'] = original_close
+    
+    # Final cleanup
+    data = data.ffill()
+    data = data.dropna()
+
+    return data
+```  
+Figure: Feature Extraction Implementation
+
+----
