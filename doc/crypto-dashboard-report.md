@@ -131,11 +131,13 @@ Table: Statoinarity Analysis - ADF Test
 
 These non-normal distributions and lack of consistent patterns between coins that could be derived from decomposition (i.e trend and seasonality), informed the selection of modeling approaches that could handle such data characteristics.
 
-4. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering.
+4. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering. I.e. two to three time lags of statistical significance.
 
 ![Figure: Partial Autocorrelation - BTC](images/btc-pacf.png)  
 
-I.e. two to three time lags of statistical significance.
+5. Trend and seasonality – demonstrating a non-linear tend and non-seasonal pattern. The plots with seasonality are likely due to the high frequency changes in value being interpreted as a repeating pattern over short time intervals (See annex).
+
+![Figure: Multiplicative Decomposition - BTC](images/btc-multiplicative-decomp.png)
 
 ### Data Transformation
 
@@ -848,7 +850,7 @@ multi step model RMSE: 5.04
 
 multi step model R2: 0.94
 
-## PCA, drop multicolinearity, feature selection (as above)
+##### PCA, drop multicolinearity, feature selection (as above)
 exited early, worst performance so far.
 
 ### Key Feature Importance
@@ -997,5 +999,74 @@ def add_features(df):
     return data
 ```  
 Figure: Feature Extraction Implementation
+
+----
+
+##### Time Series Decomposition
+
+![Figure: BTC Multiplicative Decomposition](images/btc-multiplicative-decomp.png)
+
+![Figure: BTC Seasonal Decomposition](images/btc-seasonal-deompose.png)
+
+![Figure: BNB Decomposition](images/BNB-ts-decomp.png)
+
+----
+
+```Python
+from pycaret.time_series import *
+
+random.seed(1234)
+
+def time_series_analysis_pipeline(decomp=True, transform=None):
+    experiments = []
+    for coin in selected_coins:
+        exp = TSForecastingExperiment().setup(
+            data=pd.read_csv(f"../backend/data/{coin.lower()}_1d.csv", parse_dates=True, index_col=0),
+            fh=30,
+            target='close',
+            seasonal_period='D',
+            ignore_features='symbol',
+            experiment_name=f"{coin}_experiment",
+            fig_kwargs=fig_kwargs,
+            transform_target=transform,
+            session_id=random.randrange(1, 1234)
+            )
+        experiments.append(exp)
+        # plot trend analysis, correlations and distribution
+        plt_title = f"{coin} - Time Series Diagnostics - {transform} Transform"
+        fig = exp.plot_model(plot="diagnostics", return_fig=True)
+        fig.update_layout(dict(title=plt_title))
+        fig.show()
+        if decomp:
+            # plot decomp (addtivie and multiplicative)
+            fig1 = exp.plot_model(plot='decomp', fig_kwargs={'renderer': 'notebook'}, return_fig=True)
+            fig2 = exp.plot_model(plot='decomp', data_kwargs = {'type' : 'multiplicative'}, return_fig=True)
+            fig1.update_layout(dict(title=plt_title+" - Additive"))
+            fig2.update_layout(dict(title=plt_title+" - Multiplicative"))
+            fig1.show()
+            fig2.show()
+        return experiments
+
+experiments = time_series_analysis_pipeline()
+
+for exp in experiments:
+    exp.plot_model(
+        plot="diff",
+        data_kwargs={"lags_list": [[1], [2], [1,7]], "acf": True, "pacf": True, "periodogram": True},
+        fig_kwargs={"height": 800, "width": 1500}
+    )
+```  
+Figure: Time Series Decomposition Implementation Extract
+
+----
+
+```Python
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+decompose = seasonal_decompose(data.loc[:,'BTC-USD'], model='multiplicative', extrapolate_trend='freq')
+
+decompose.plot().show()
+```
+Figure: Time Series Decomposition Additional Implementation
 
 ----
