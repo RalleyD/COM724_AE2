@@ -125,13 +125,13 @@ Table: Statoinarity Analysis - ADF Test
 
 3. Distrubtion over annual intervals: a general shift from postiviely skewed data to negatviely skewed from 2021 to 2025 with an increase in kurtosis. Indicating, increasing close price values and with a higher liklihood of extreme values. Litecoin being the exception which maintained a consistent concentration of close prices in a lower range.
 
-![Figure: Histograms over annual intervals - BNB](images/bnb_dist.png)  
+![Figure: Histograms over annual intervals - BNB](images/bnb-close-dist-4yr.png)  
 
-![Figure: Histograms over annual intervals - BTC](images/btc_dist.png)  
+![Figure: Histograms over annual intervals - BTC](images/btc-close-dist-4yr.png)  
 
 These non-normal distributions and lack of consistent patterns between coins that could be derived from decomposition (i.e trend and seasonality), informed the selection of modeling approaches that could handle such data characteristics.
 
-4. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering. I.e. two to three time lags of statistical significance.
+1. Autocorrelation: short-term partial autocorrelation indicated a useful indicator for feature engineering. I.e. two to three time lags of statistical significance.
 
 ![Figure: Partial Autocorrelation - BTC](images/btc-pacf.png)  
 
