@@ -410,6 +410,23 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
 
     return forecast_df
 
+def store_forecast_data(coin:str, historical: pd.DataFrame, forecast: pd.DataFrame):
+    """
+    Using the most recent time window
+    Concat the two dataframes and store locally
+    """
+    combined_df: pd.DataFrame = pd.concat(
+        [
+            historical.set_index('timestamp').loc[:, ['close']],
+            forecast.set_index('date').loc[:, ['predicted']]
+        ],
+        axis=0,
+        copy=True
+    )
+
+    combined_df.to_csv(f"backend/data/{coin}_close_forecast.csv")
+    
+
 
 def get_market_state(data_dict):
     """Analyze market state based on multiple coins"""
@@ -865,6 +882,8 @@ def main():
                         y=1.02, xanchor='right', x=1)
         )
 
+        # output the data for backtesting
+        store_forecast_data(selected_coin, historical, forecast)
         
         st.plotly_chart(fig, use_container_width=True)
 
