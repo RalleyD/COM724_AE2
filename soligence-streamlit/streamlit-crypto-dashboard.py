@@ -222,18 +222,17 @@ def missing_values(df: pd.DataFrame):
     return df
 
 
-def create_sequences(data, window=60, horizon=30, step=1):
+def create_sequences(data, window=60, horizon=30, step=1, target_col="pct_change"):
     """Create sequences while tracking corresponding dates"""
     x = []
     y = []
     target_dates = []
     
     # Extract the target values
-    target_col = "original_close" if "original_close" in data.columns else 'close'
     target = data[target_col].values
     
     # Get the feature columns
-    feature_cols = [col for col in data.columns if col != target_col and col != 'close']
+    feature_cols = [col for col in data.columns if col != target_col and col != 'original_close']
     
     # Extract the feature values
     features = data.loc[:, feature_cols].values
@@ -306,14 +305,27 @@ def add_features(df):
     # Apply scaling to all features
     data[features] = scaler.transform(data[features])
 
-    # Restore original close values for target
+    # Restore original close values
     data['original_close'] = original_close
+    
+    # use percentage change as the target, rather than absolute price
+    # this may better scale with the different price levels of each crypto
+    # TODO consider dropping NaN separately, as this function will likely ffill it.
+    data['pct_change'] = data['original_close'].pct_change()
     
     # Final cleanup
     data = data.ffill()
     data = data.dropna()
 
     return data
+
+
+def split_data_test_train(X, y, target_dates:list, train_split=0.8):
+    split_idx = int(len(X) * train_split)
+    X_train, X_test = X[:split_idx], X[split_idx:]
+    y_train, y_test = y[:split_idx], y[split_idx:]
+    test_dates = target_dates[split_idx:]
+    return X_train, y_train, X_test, y_test, test_dates
 
 
 @st.cache_data
@@ -327,13 +339,15 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     
     df_features = add_features(df)
     
+    target_col = 'pct_change'
+    
     # Define train/test split
     train_split = 0.8
     
     # Set up PyCaret experiment
     experiment = RegressionExperiment().setup(
         data=df_features,
-        target='original_close',  # Use original prices as target
+        target=target_col, # use percent change as target
         data_split_shuffle=False,
         fold=5,
         fold_strategy='timeseries',
@@ -353,7 +367,7 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     final_df = experiment.dataset_transformed
 
     # Define feature columns (excluding target)
-    feature_cols = [col for col in final_df.columns if col != 'original_close' and col != 'close']
+    feature_cols = [col for col in final_df.columns if col != 'original_close' and col != 'pct_change']
 
     # Create sequences for training
     X, y, target_dates = create_sequences(final_df, window=input_window, horizon=forecast_horizon)
@@ -368,16 +382,17 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     latest_window = final_df.iloc[-input_window:][feature_cols].values.flatten().reshape(1, -1)
 
     # Make forecast
-    forecast = model.predict(latest_window)[0]
-    
-    # Add continuity adjustment
-    last_actual_price = df_features['original_close'].iloc[-1]
-    first_forecast_price = forecast[0]
-    if first_forecast_price != 0:
-        adjustment_factor = last_actual_price / first_forecast_price
-        # Only apply significant adjustments
-        if adjustment_factor > 1.1 or adjustment_factor < 0.9:
-            forecast = forecast * adjustment_factor
+    pct_changes = model.predict(latest_window)[0]
+
+    # convert percentage change to absolute prices
+    last_price = df_features['original_close'].iloc[-1]
+    forecast = [last_price]
+    for change in pct_changes:
+        forecast.append(forecast[-1] * (1 + change))
+        
+    # ensure to remove the first element as this is the last historical price
+    forecast = forecast[1:]
+    forecast = np.array(forecast)
     
     # Create forecast dates
     last_date = df.index[-1]
@@ -388,8 +403,8 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     forecast_df = pd.DataFrame({
         'date': forecast_dates,
         'predicted': forecast,
-        'lower_bound': forecast * 0.95,  # Simplified confidence interval
-        'upper_bound': forecast * 1.05,  # Simplified confidence interval
+        'lower_bound': np.multiply(forecast, 0.95),  # Simplified confidence interval
+        'upper_bound': np.multiply(forecast, 1.05),  # Simplified confidence interval
         'confidence': np.linspace(0.9, 0.6, forecast_horizon)  # Decreasing confidence over time
     })
 
@@ -850,6 +865,7 @@ def main():
                         y=1.02, xanchor='right', x=1)
         )
 
+        
         st.plotly_chart(fig, use_container_width=True)
 
     # Correlation and recommendations
