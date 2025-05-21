@@ -375,6 +375,8 @@ def train_forecast_model(df, forecast_horizon=90, input_window=180):
     # Create MultiOutputRegressor
     model = MultiOutputRegressor(xgb_tuned)
     
+    X_train, y_train, x_test, y_test, _ = split_data_test_train(X, y, target_dates)
+    
     # Train on all data before forecasting
     model.fit(X, y)
 
@@ -417,13 +419,13 @@ def store_forecast_data(coin:str, historical: pd.DataFrame, forecast: pd.DataFra
     """
     combined_df: pd.DataFrame = pd.concat(
         [
-            historical.set_index('timestamp').loc[:, ['close']],
-            forecast.set_index('date').loc[:, ['predicted']]
+            historical.set_index('timestamp'),
+            forecast.set_index('date').loc[:, ['predicted']].rename(columns={'predicted': 'predicted_close'})
         ],
         axis=0,
         copy=True
     )
-
+    
     combined_df.to_csv(f"backend/data/{coin}_close_forecast.csv")
     
 
